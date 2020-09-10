@@ -1,8 +1,8 @@
 import { tokenize } from "./Tokenizer";
-import { isNum, isUnOp, isBinOp, Op, Token } from "./Types";
+import { isNum, isUnOp, isBinOp, Ident, Op, Token, isIdent } from "./Types";
 import { unOp, binOp, prec, assoc, fixity } from "./Ops";
 
-function parse(s: string): number {
+function parse(s: string, variables: { [s: string]: number } = {}): number {
   let ts = tokenize(s).reverse();
   //   console.log(ts);
   let ops: (Op | "(")[] = [];
@@ -15,6 +15,8 @@ function parse(s: string): number {
     // );
     if (isNum(t)) {
       vals.push(t);
+    } else if (isIdent(t)) {
+      vals.push(variables[t]);
     } else if (t === "(") {
       ops.push(t);
     } else if (t === ")") {

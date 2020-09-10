@@ -1,4 +1,14 @@
-import { isDigit, isNum, isOp, Digit, Token } from "./Types";
+import {
+  isDigit,
+  isNum,
+  isOp,
+  Digit,
+  Token,
+  isIdentChar,
+  isIdentStartChar,
+  isIdent,
+  IdentStartChar,
+} from "./Types";
 
 export function tokenize(s: string): Token[] {
   let ts: Token[] = [];
@@ -15,7 +25,8 @@ export function tokenize(s: string): Token[] {
         ts.push("*");
       }
     } else if (c === "+" || c === "-") {
-      if (isNum(ts[ts.length - 1]) || ts[ts.length - 1] === ")") {
+      let top = ts[ts.length - 1];
+      if (isNum(top) || top === ")" || isIdent(top)) {
         ts.push(c);
       } else {
         ts.push(c === "+" ? "u+" : "u-");
@@ -23,14 +34,31 @@ export function tokenize(s: string): Token[] {
     } else if (isOp(c)) {
       ts.push(c);
     } else if (isDigit(c) || c === ".") {
-      ts.push(number(cs, c));
+      ts.push(scanNumber(cs, c));
+    } else if (isIdentStartChar(c)) {
+      ts.push(scanIdent(cs, c));
     }
     eatWhitespace(cs);
   }
   return ts;
 }
 
-function number(cs: string[], c: "." | Digit): number {
+function scanIdent(cs: string[], c: IdentStartChar) {
+  let i = cs.length - 1;
+  while (isIdentChar(cs[i])) {
+    i--;
+  }
+  let ident: string = c;
+  for (let j = cs.length - 1; j > i; j--) {
+    ident += cs.pop();
+  }
+  return ident;
+}
+// let cs = Array.from("__$aZ - 123").reverse();
+// let c = cs.pop() as IdentStartChar;
+// console.log(scanIdent(cs, c), cs);
+
+function scanNumber(cs: string[], c: "." | Digit): number {
   let i = cs.length - 1;
   if (c === ".") {
     // no integer part
