@@ -1,4 +1,4 @@
-import { isDigit, isNum, isOp, Token } from "./Types";
+import { isDigit, isNum, isOp, Digit, Token } from "./Types";
 
 export function tokenize(s: string): Token[] {
   let ts: Token[] = [];
@@ -22,25 +22,61 @@ export function tokenize(s: string): Token[] {
       }
     } else if (isOp(c)) {
       ts.push(c);
-    } else if (isDigit(c)) {
-      ts.push(integer(cs, c));
+    } else if (isDigit(c) || c === ".") {
+      ts.push(number(cs, c));
     }
     eatWhitespace(cs);
   }
   return ts;
 }
 
-function integer(cs: string[], c: string): number {
-  let n = c;
-  while ((c = cs.pop())) {
-    if (isDigit(c)) {
-      n += c;
+function number(cs: string[], c: "." | Digit): number {
+  let i = cs.length - 1;
+  if (c === ".") {
+    // no integer part
+    if (isDigit(cs[i])) {
+      // scan fractional part
+      i--;
+      while (isDigit(cs[i])) {
+        i--;
+      }
     } else {
-      cs.push(c);
-      break;
+      throw new Error("Fractional part expected.");
+    }
+  } else {
+    // integer part
+    while (isDigit(cs[i])) {
+      i--;
+    }
+    if (cs[i] === ".") {
+      // fractional part
+      i--;
+      while (isDigit(cs[i])) {
+        i--;
+      }
     }
   }
-  return Number(n);
+  if (cs[i] === "e") {
+    // exponent
+    i--;
+    if (cs[i] === "+" || cs[i] === "-") {
+      // sign of the exponent
+      i--;
+    }
+    if (isDigit(cs[i])) {
+      // the nonnegative integer part of the exponent
+      i--;
+      while (isDigit(cs[i])) {
+        i--;
+      }
+    } else {
+      throw new Error("Exponent expected.");
+    }
+  }
+  for (let j = cs.length - 1; j > i; j--) {
+    c += cs.pop();
+  }
+  return Number(c);
 }
 
 function eatWhitespace(cs: string[]): void {

@@ -4,6 +4,7 @@ import { unOp, binOp, prec, assoc, fixity } from "./Ops";
 
 function parse(s: string): number {
   let ts = tokenize(s).reverse();
+  //   console.log(ts);
   let ops: (Op | "(")[] = [];
   let vals: number[] = [];
   //   console.log(`ts = [${ts.join(", ")}]\n`);
