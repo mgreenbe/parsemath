@@ -9,6 +9,7 @@ export type LParenTok = ["LParen", "(", number];
 export type RParenTok = ["RParen", ")", number];
 export type IdentTok = ["Ident", string, number];
 export type Tok = NumTok | OpTok | LParenTok | RParenTok | IdentTok;
+export type TokType = "Num" | "UnOp" | "BinOp" | "LParen" | "RParen" | "Ident";
 
 export type Precedence = 0 | 1 | 2 | 3;
 export type Associativity = "left" | "right";

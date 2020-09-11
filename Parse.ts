@@ -89,6 +89,9 @@ export default class Parser {
     if (isBinOp(op)) {
       let y = this.vals.pop();
       let x = this.vals.pop();
+      if (x === undefined || y === undefined) {
+        this.throwError("Unspecified parsing error.");
+      }
       this.vals.push(binOp(op, x, y));
     } else {
       // unary op
@@ -97,15 +100,19 @@ export default class Parser {
     }
   }
 
-  throwError(m: string, t: Tok) {
-    throw new Error(
-      `${m}\n\n${this.s}\n${" ".repeat(t[2])}\u25B2\n${"\u2500".repeat(
-        t[2]
-      )}\u256F`
-    );
+  throwError(m: string, t?: Tok) {
+    if (t === undefined) {
+      throw new Error(m);
+    } else {
+      throw new Error(
+        `${m}\n\n${this.s}\n${" ".repeat(t[2])}\u25B2\n${
+          t && "\u2500".repeat(t[2])
+        }\u256F`
+      );
+    }
   }
 }
 
-let expr = "(((3*2))";
-let P = new Parser(expr);
-console.log(P.parse(), eval(expr));
+// let expr = "(-1)x";
+// let P = new Parser(expr, { sin: 0, x: 2 });
+// console.log(P.parse());

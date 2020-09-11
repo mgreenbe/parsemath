@@ -1,4 +1,9 @@
-import { Tok } from "./Types";
+import { Tok, TokType } from "./Types";
+
+const desc = {
+  Num: "number",
+  Ident: "identifier",
+};
 
 export default class Tokenizer {
   s: string;
@@ -15,14 +20,18 @@ export default class Tokenizer {
     let ts: Tok[] = [];
     while (this.index < this.s.length) {
       let cur = this.s[this.index];
+      let prev = ts[ts.length - 1];
       switch (cur) {
         case "(":
+          this.isValidTokCharOrder(prev, "LParen", cur);
           ts.push(["LParen", cur, this.index++]);
           break;
         case ")":
+          this.isValidTokCharOrder(prev, "RParen", cur);
           ts.push(["RParen", cur, this.index++]);
           break;
         case "*":
+          this.isValidTokCharOrder(prev, "BinOp", cur);
           if (this.s[this.index + 1] === "*") {
             ts.push(["BinOp", "**", this.index]);
             this.index += 2;
@@ -38,14 +47,17 @@ export default class Tokenizer {
               top &&
               (top[0] === "Num" || top[0] === "Ident" || top[0] === "RParen")
             ) {
+              this.isValidTokCharOrder(prev, "BinOp", cur);
               ts.push(["BinOp", cur, this.index++]);
             } else {
+              this.isValidTokCharOrder(prev, "UnOp", cur);
               ts.push(["UnOp", cur === "+" ? "u+" : "u-", this.index++]);
             }
           }
           break;
         case "/":
         case "^":
+          this.isValidTokCharOrder(prev, "BinOp", cur);
           ts.push(["BinOp", cur, this.index++]);
           break;
         case "0":
@@ -60,6 +72,7 @@ export default class Tokenizer {
         case "9":
         case ".":
           {
+            this.isValidTokCharOrder(prev, "Num", cur);
             let [num, i] = this.scanNumber();
             ts.push(["Num", num, i]);
           }
@@ -119,6 +132,7 @@ export default class Tokenizer {
         case "$":
         case "_":
           {
+            this.isValidTokCharOrder(prev, "Ident", cur);
             let [ident, i] = this.scanIdent();
             if (!this.allowedIdents.includes(ident)) {
               this.throwError(
@@ -137,6 +151,16 @@ export default class Tokenizer {
           );
       }
       this.skipWhitespace();
+    }
+    let last = ts[ts.length - 1];
+    if (last === undefined) {
+      throw new Error("Empty expression.");
+    } else if (
+      last[0] === "UnOp" ||
+      last[0] === "BinOp" ||
+      last[0] === "LParen"
+    ) {
+      this.throwError("Unexpected end of expression.");
     }
     return ts;
   }
@@ -204,6 +228,48 @@ export default class Tokenizer {
       this.index++;
     }
     return [this.s.slice(start, this.index), start];
+  }
+
+  isValidTokCharOrder(
+    prev: Tok | undefined,
+    tokType: TokType,
+    cur: string
+  ): true {
+    let p: TokType | undefined = prev?.[0];
+    switch (p) {
+      case undefined:
+      case "UnOp":
+      case "BinOp":
+      case "LParen":
+        if (tokType === "BinOp" || tokType === "RParen") {
+          this.throwError(`Unexpected '${cur}' at position ${this.index}.`);
+        }
+        break;
+      case "Num":
+      case "RParen":
+      case "Ident":
+        if (tokType === "Num") {
+          this.throwError(`Unexpected number at position ${this.index}.`);
+        }
+        if (tokType === "Ident") {
+          this.throwError(`Unexpected identifier at position ${this.index}.`);
+        }
+        if (
+          tokType === "Num" ||
+          tokType === "UnOp" ||
+          tokType === "LParen" ||
+          tokType === "Ident"
+        ) {
+          this.throwError(`Unexpected '${cur}' at position ${this.index}.`);
+        }
+        break;
+      default:
+        p;
+        this.throwError(
+          `Unspecified tokenization error at position ${this.index}.`
+        );
+    }
+    return true;
   }
 
   throwError(m: string, i = this.index) {
