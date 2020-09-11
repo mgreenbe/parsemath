@@ -1,6 +1,13 @@
-import { Op, UnOp, BinOp, Associativity, Precedence, Fixity } from "./Types";
+import {
+  Op,
+  UnOp,
+  BinOp,
+  Associativity as Assoc,
+  Precedence as Prec,
+  Fixity as Fix,
+} from "./Types";
 
-export const prec: Record<Op, Precedence> = {
+export const prec: Record<Op, Prec> = {
   "+": 0,
   "u+": 1,
   "-": 0,
@@ -11,7 +18,7 @@ export const prec: Record<Op, Precedence> = {
   "**": 3,
 };
 
-export const assoc: Record<Op, Associativity> = {
+export const assoc: Record<Op, Assoc> = {
   "+": "left",
   "u+": "right",
   "-": "left",
@@ -22,7 +29,7 @@ export const assoc: Record<Op, Associativity> = {
   "**": "right",
 };
 
-export const fixity: Record<Op, Fixity> = {
+export const fixity: Record<Op, Fix> = {
   "+": "infix",
   "u+": "prefix",
   "-": "infix",

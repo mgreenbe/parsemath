@@ -35,7 +35,10 @@ export default class Parser {
         case "RParen":
           {
             let op = this.ops.pop();
-            if (op?.[0] !== "LParen") {
+            if (op === undefined) {
+              this.throwError(`Unmatched ')' at ${t[2]}.`, t);
+            }
+            if (op[0] !== "LParen") {
               this.evalOp(op[1]);
               this.index--;
             }
@@ -72,7 +75,8 @@ export default class Parser {
     let op: OpTok | LParenTok;
     while ((op = this.ops.pop())) {
       if (op[0] === "LParen") {
-        throw new Error("Unexpected '('.");
+        this.throwError(`Unmatched '(' at position ${op[2]}.`, op);
+        // throw new Error("Unexpected '('.");
       } else {
         this.evalOp(op[1]);
       }
@@ -92,8 +96,16 @@ export default class Parser {
       this.vals.push(unOp(op, x));
     }
   }
+
+  throwError(m: string, t: Tok) {
+    throw new Error(
+      `${m}\n\n${this.s}\n${" ".repeat(t[2])}\u25B2\n${"\u2500".repeat(
+        t[2]
+      )}\u256F`
+    );
+  }
 }
 
-// let expr = "(1)";
-// let P = new Parser(expr);
-// console.log(P.parse(), eval(expr));
+let expr = "(((3*2))";
+let P = new Parser(expr);
+console.log(P.parse(), eval(expr));
