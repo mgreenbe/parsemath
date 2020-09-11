@@ -54,9 +54,6 @@ function scanIdent(cs: string[], c: IdentStartChar) {
   }
   return ident;
 }
-// let cs = Array.from("__$aZ - 123").reverse();
-// let c = cs.pop() as IdentStartChar;
-// console.log(scanIdent(cs, c), cs);
 
 function scanNumber(cs: string[], c: "." | Digit): number {
   let i = cs.length - 1;

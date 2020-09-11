@@ -61,15 +61,3 @@ export function unOp(op: UnOp, x: number): number {
       throw new Error(`Unknown binary operation: ${op}`);
   }
 }
-
-//   if (typeof x !== "number" || typeof y !== "number") {
-//     throw new Error(
-//       `Binary operation ${op} takes two numeric arguments. Arguments given: ${x}, ${y}.`
-//     );
-//   }
-
-//   if (typeof x !== "number") {
-//     throw new Error(
-//       `Unary operation ${op} takes a numeric argument. Argument given: ${x}.`
-//     );
-//   }
