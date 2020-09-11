@@ -144,3 +144,5 @@ export type Precedence = 0 | 1 | 2 | 3;
 export type Associativity = "left" | "right";
 export type Arity = 1 | 2;
 export type Fixity = "prefix" | "infix";
+
+export type Scope = { [ident: string]: number };

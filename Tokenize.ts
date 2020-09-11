@@ -7,7 +7,7 @@ import {
   isIdentStartChar,
 } from "./Types";
 
-class Tokenizer {
+export default class Tokenizer {
   s: string;
   index: number = 0;
   allowedIdents: string[];
@@ -69,12 +69,6 @@ class Tokenizer {
     return ts;
   }
 
-  throwError(m: string, i = this.index) {
-    throw new Error(
-      `${m}\n\n${this.s}\n${" ".repeat(i)}\u25B2\n${"\u2500".repeat(i)}\u256F`
-    );
-  }
-
   skipWhitespace() {
     while (this.cur()?.trim() === "") {
       this.index++;
@@ -92,7 +86,9 @@ class Tokenizer {
           this.index++;
         }
       } else {
-        throw new Error("Fractional part expected.");
+        this.throwError(
+          "Error parsing number. Fractional part expected after decimal point."
+        );
       }
     } else {
       // integer part
@@ -121,7 +117,9 @@ class Tokenizer {
           this.index++;
         }
       } else {
-        throw new Error("Exponent expected.");
+        this.throwError(
+          "Error parsing number. Integer exponent expected after 'e'."
+        );
       }
     }
     return [Number(this.s.slice(start, this.index)), start];
@@ -134,8 +132,14 @@ class Tokenizer {
     }
     return [this.s.slice(start, this.index), start];
   }
+
+  throwError(m: string, i = this.index) {
+    throw new Error(
+      `${m}\n\n${this.s}\n${" ".repeat(i)}\u25B2\n${"\u2500".repeat(i)}\u256F`
+    );
+  }
 }
 
-let s = "      xxx+ 101.123+~2.987e0*yy/z";
-let tokenizer = new Tokenizer(s, ["xxx", "yy", "z"]);
-console.log(tokenizer.tokenize());
+// let s = ".%2exxx";
+// let tokenizer = new Tokenizer(s, ["xxx", "yy", "z"]);
+// console.log(tokenizer.tokenize());

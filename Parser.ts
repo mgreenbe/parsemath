@@ -1,5 +1,5 @@
 import { tokenize } from "./Tokenizer";
-import { isNum, isUnOp, isBinOp, Ident, Op, Token, isIdent } from "./Types";
+import { isNum, isUnOp, isBinOp, Op, Token, isIdent } from "./Types";
 import { unOp, binOp, prec, assoc, fixity } from "./Ops";
 
 function parse(s: string, variables: { [s: string]: number } = {}): number {
