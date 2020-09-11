@@ -1,14 +1,14 @@
-import { isNum, isUnOp, isBinOp, Op, Token, isIdent, Scope } from "./Types";
-import { unOp, binOp, prec, assoc, fixity } from "./Ops";
+import { Op, OpTok, LParenTok, Scope, Tok } from "./Types";
+import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
 
 import Tokenizer from "./Tokenize";
 
 export default class Parser {
   s: string;
   scope: Scope;
-  ts: [Token, number][];
+  ts: Tok[];
   index = 0;
-  ops: (Op | "(")[] = [];
+  ops: (OpTok | LParenTok)[] = [];
   vals: number[] = [];
 
   constructor(s: string, scope: Scope = {}) {
@@ -21,48 +21,60 @@ export default class Parser {
 
   parse(): number {
     while (this.index < this.ts.length) {
-      let [t, i] = this.ts[this.index++];
-      if (isNum(t)) {
-        this.vals.push(t);
-      } else if (isIdent(t)) {
-        this.vals.push(this.scope[t]);
-      } else if (t === "(") {
-        this.ops.push(t);
-      } else if (t === ")") {
-        let op = this.ops.pop();
-        if (op !== "(") {
-          this.evalOp(op);
-          this.index--;
-          //   ts.push(")");
-        }
-      } else {
-        // t is an operator
-        let op = this.ops.pop();
-        if (op === undefined) {
+      let t = this.ts[this.index++];
+      switch (t[0]) {
+        case "Num":
+          this.vals.push(t[1]);
+          break;
+        case "Ident":
+          this.vals.push(this.scope[t[1]]);
+          break;
+        case "LParen":
           this.ops.push(t);
-        } else if (op === "(") {
-          this.ops.push(op, t);
-        } else if (
-          prec[t] > prec[op] ||
-          (prec[t] === prec[op] && assoc[t] === "right") ||
-          (prec[t] <= prec[op] && isUnOp(t) && fixity[t] === "prefix")
-        ) {
-          this.ops.push(op, t);
-        } else {
-          //ts.push(t);
-          this.index--;
-          this.evalOp(op);
-        }
+          break;
+        case "RParen":
+          {
+            let op = this.ops.pop();
+            if (op?.[0] !== "LParen") {
+              this.evalOp(op[1]);
+              this.index--;
+            }
+          }
+          break;
+        case "UnOp":
+        case "BinOp":
+          {
+            let op = this.ops.pop();
+            if (op === undefined) {
+              this.ops.push(t);
+            } else if (op[0] === "LParen") {
+              this.ops.push(op, t);
+            } else if (
+              prec[t[1]] > prec[op[1]] ||
+              (prec[t[1]] === prec[op[1]] && assoc[t[1]] === "right") ||
+              (prec[t[1]] <= prec[op[1]] &&
+                isUnOp(t[1]) &&
+                fixity[t[1]] === "prefix")
+            ) {
+              this.ops.push(op, t);
+            } else {
+              this.index--;
+              this.evalOp(op[1]);
+            }
+          }
+          break;
+        default:
+          throw new Error("This shouldn't happen!");
       }
     }
     // All tokens processed.
     // Clear out operation and value stacks.
-    let op: Op | "(";
+    let op: OpTok | LParenTok;
     while ((op = this.ops.pop())) {
-      if (op === "(") {
+      if (op[0] === "LParen") {
         throw new Error("Unexpected '('.");
       } else {
-        this.evalOp(op);
+        this.evalOp(op[1]);
       }
     }
     console.assert(this.vals.length === 1);
@@ -82,6 +94,6 @@ export default class Parser {
   }
 }
 
-// let expr = "((1)";
+// let expr = "(1)";
 // let P = new Parser(expr);
 // console.log(P.parse(), eval(expr));

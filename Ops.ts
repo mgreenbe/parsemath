@@ -61,3 +61,13 @@ export function unOp(op: UnOp, x: number): number {
       throw new Error(`Unknown binary operation: ${op}`);
   }
 }
+
+export function isUnOp(s: string): s is UnOp {
+  return s === "u+" || s === "u-";
+}
+
+export function isBinOp(c: string): c is BinOp {
+  return (
+    c === "+" || c === "-" || c === "*" || c === "/" || c === "^" || c === "**"
+  );
+}

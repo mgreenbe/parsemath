@@ -1,68 +1,140 @@
-import {
-  isNum,
-  isIdent,
-  Token,
-  isDigit,
-  isIdentChar,
-  isIdentStartChar,
-} from "./Types";
+import { Tok } from "./Types";
 
 export default class Tokenizer {
   s: string;
   index: number = 0;
   allowedIdents: string[];
+
   constructor(s: string, allowedIdents: string[] = []) {
     this.s = s;
     this.allowedIdents = allowedIdents;
   }
 
-  cur() {
-    return this.s[this.index];
-  }
-
-  next() {
-    return this.s[this.index + 1];
-  }
-
-  tokenize(): [Token, number][] {
+  tokenize(): Tok[] {
     this.skipWhitespace();
-    let ts: [Token, number][] = [];
+    let ts: Tok[] = [];
     while (this.index < this.s.length) {
-      let cur = this.cur();
-      if (cur === "*" && this.next() === "*") {
-        ts.push(["**", this.index]);
-        this.index += 2;
-      } else if (cur === "+" || cur === "-") {
-        let top = ts[ts.length - 1]?.[0];
-        if (isNum(top) || isIdent(top) || top === ")") {
-          ts.push([cur, this.index++]);
-        } else {
-          ts.push([cur === "+" ? "u+" : "u-", this.index++]);
-        }
-      } else if (
-        cur === "*" ||
-        cur === "/" ||
-        cur === "^" ||
-        cur === "(" ||
-        cur === ")"
-      ) {
-        ts.push([cur, this.index++]);
-      } else if (isDigit(cur) || cur === ".") {
-        let t = this.scanNumber();
-        ts.push(t);
-      } else if (isIdentStartChar(cur)) {
-        let t = this.scanIdent();
-        if (!this.allowedIdents.includes(t[0])) {
+      let cur = this.s[this.index];
+      switch (cur) {
+        case "(":
+          ts.push(["LParen", cur, this.index++]);
+          break;
+        case ")":
+          ts.push(["RParen", cur, this.index++]);
+          break;
+        case "*":
+          if (this.s[this.index + 1] === "*") {
+            ts.push(["BinOp", "**", this.index]);
+            this.index += 2;
+          } else {
+            ts.push(["BinOp", "*", this.index++]);
+          }
+          break;
+        case "+":
+        case "-":
+          {
+            let top = ts[ts.length - 1];
+            if (
+              top &&
+              (top[0] === "Num" || top[0] === "Ident" || top[0] === "RParen")
+            ) {
+              ts.push(["BinOp", cur, this.index++]);
+            } else {
+              ts.push(["UnOp", cur === "+" ? "u+" : "u-", this.index++]);
+            }
+          }
+          break;
+        case "/":
+        case "^":
+          ts.push(["BinOp", cur, this.index++]);
+          break;
+        case "0":
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+        case ".":
+          {
+            let [num, i] = this.scanNumber();
+            ts.push(["Num", num, i]);
+          }
+          break;
+        case "a":
+        case "b":
+        case "c":
+        case "d":
+        case "e":
+        case "f":
+        case "g":
+        case "h":
+        case "i":
+        case "j":
+        case "k":
+        case "l":
+        case "m":
+        case "n":
+        case "o":
+        case "p":
+        case "q":
+        case "r":
+        case "s":
+        case "t":
+        case "u":
+        case "v":
+        case "w":
+        case "x":
+        case "y":
+        case "z":
+        case "A":
+        case "B":
+        case "C":
+        case "D":
+        case "E":
+        case "F":
+        case "G":
+        case "H":
+        case "I":
+        case "J":
+        case "K":
+        case "L":
+        case "M":
+        case "N":
+        case "O":
+        case "P":
+        case "Q":
+        case "R":
+        case "S":
+        case "T":
+        case "U":
+        case "V":
+        case "W":
+        case "X":
+        case "Y":
+        case "Z":
+        case "$":
+        case "_":
+          {
+            let [ident, i] = this.scanIdent();
+            if (!this.allowedIdents.includes(ident)) {
+              this.throwError(
+                `Unknown identifier '${ident}' at position ${i}.`,
+                i
+              );
+            }
+            ts.push(["Ident", ident, i]);
+          }
+          break;
+        default:
           this.throwError(
-            `Unknown identifier '${t[0]}' at position ${t[1]}.`,
-            t[1]
+            `Unexpected character '${this.s[this.index]}' at position ${
+              this.index
+            }.`
           );
-        }
-        ts.push(t);
-      } else {
-        this.throwError(
-          `Unexpected character '${this.cur()}' at position ${this.index}.`
-        );
       }
       this.skipWhitespace();
     }
@@ -70,19 +142,19 @@ export default class Tokenizer {
   }
 
   skipWhitespace() {
-    while (this.cur()?.trim() === "") {
+    while (this.s[this.index]?.trim() === "") {
       this.index++;
     }
   }
 
   scanNumber(): [number, number] {
     let start = this.index;
-    if (this.cur() === ".") {
+    if (this.s[this.index] === ".") {
       this.index++;
-      if (isDigit(this.cur())) {
+      if (isDigit(this.s[this.index])) {
         // scan fractional part
         this.index++;
-        while (isDigit(this.cur())) {
+        while (isDigit(this.s[this.index])) {
           this.index++;
         }
       } else {
@@ -91,29 +163,30 @@ export default class Tokenizer {
         );
       }
     } else {
-      // integer part
-      while (isDigit(this.cur())) {
+      // this.cur is a digit
+      // scan integer part
+      while (isDigit(this.s[this.index])) {
         this.index++;
       }
-      if (this.cur() === ".") {
-        // fractional part
+      if (this.s[this.index] === ".") {
+        // scan fractional part
         this.index++;
-        while (isDigit(this.cur())) {
+        while (isDigit(this.s[this.index])) {
           this.index++;
         }
       }
     }
-    if (this.cur() === "e") {
-      // exponent
+    if (this.s[this.index] === "e") {
+      // scan exponent
       this.index++;
-      if (this.cur() === "+" || this.cur() === "-") {
-        // sign of the exponent
+      if (this.s[this.index] === "+" || this.s[this.index] === "-") {
+        // scan sign of the exponent
         this.index++;
       }
-      if (isDigit(this.cur())) {
-        // the nonnegative integer part of the exponent
+      if (isDigit(this.s[this.index])) {
+        // scan the nonnegative integer part of the exponent
         this.index++;
-        while (isDigit(this.cur())) {
+        while (isDigit(this.s[this.index])) {
           this.index++;
         }
       } else {
@@ -127,7 +200,7 @@ export default class Tokenizer {
 
   scanIdent(): [string, number] {
     let start = this.index++;
-    while (isIdentChar(this.cur())) {
+    while (isIdentChar(this.s[this.index])) {
       this.index++;
     }
     return [this.s.slice(start, this.index), start];
@@ -138,6 +211,34 @@ export default class Tokenizer {
       `${m}\n\n${this.s}\n${" ".repeat(i)}\u25B2\n${"\u2500".repeat(i)}\u256F`
     );
   }
+}
+
+export function isDigit(c: any) {
+  return (
+    c === "0" ||
+    c === "1" ||
+    c === "2" ||
+    c === "3" ||
+    c === "4" ||
+    c === "5" ||
+    c === "6" ||
+    c === "7" ||
+    c === "8" ||
+    c === "9"
+  );
+}
+
+export function isLetter(s: any) {
+  return (
+    typeof s === "string" &&
+    s.length === 1 &&
+    ((s.charCodeAt(0) >= 97 && s.charCodeAt(0) < 123) ||
+      (s.charCodeAt(0) >= 65 && s.charCodeAt(0) < 91))
+  );
+}
+
+export function isIdentChar(s: any) {
+  return isLetter(s) || isDigit(s) || s === "$" || s === "_";
 }
 
 // let s = ".%2exxx";
