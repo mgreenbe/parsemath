@@ -1,4 +1,7 @@
-export default class Tokenizer {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isIdentChar = exports.isLetter = exports.isDigit = void 0;
+class Tokenizer {
     constructor(s, allowedIdents = []) {
         this.index = 0;
         this.s = s;
@@ -242,7 +245,8 @@ export default class Tokenizer {
         throw new Error(`${m}\n\n${this.s}\n${" ".repeat(i)}\u25B2\n${"\u2500".repeat(i)}\u256F`);
     }
 }
-export function isDigit(c) {
+exports.default = Tokenizer;
+function isDigit(c) {
     return (c === "0" ||
         c === "1" ||
         c === "2" ||
@@ -254,12 +258,15 @@ export function isDigit(c) {
         c === "8" ||
         c === "9");
 }
-export function isLetter(s) {
+exports.isDigit = isDigit;
+function isLetter(s) {
     return (typeof s === "string" &&
         s.length === 1 &&
         ((s.charCodeAt(0) >= 97 && s.charCodeAt(0) < 123) ||
             (s.charCodeAt(0) >= 65 && s.charCodeAt(0) < 91)));
 }
-export function isIdentChar(s) {
+exports.isLetter = isLetter;
+function isIdentChar(s) {
     return isLetter(s) || isDigit(s) || s === "$" || s === "_";
 }
+exports.isIdentChar = isIdentChar;

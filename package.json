@@ -1,6 +1,6 @@
 {
   "name": "parsemath",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Matthew Greenberg",
   "repository": "github:mgreenbe/parsemath",
   "description": "A simple arithmetic expression parser.",

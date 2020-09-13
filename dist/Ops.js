@@ -1,4 +1,7 @@
-export const prec = {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isBinOp = exports.isUnOp = exports.unOp = exports.binOp = exports.fixity = exports.assoc = exports.prec = void 0;
+exports.prec = {
     "=": 0,
     "+": 1,
     "-": 1,
@@ -9,7 +12,7 @@ export const prec = {
     "^": 4,
     "**": 4,
 };
-export const assoc = {
+exports.assoc = {
     "+": "left",
     "u+": "right",
     "-": "left",
@@ -20,7 +23,7 @@ export const assoc = {
     "**": "right",
     "=": "left",
 };
-export const fixity = {
+exports.fixity = {
     "+": "infix",
     "u+": "prefix",
     "-": "infix",
@@ -31,7 +34,7 @@ export const fixity = {
     "**": "infix",
     "=": "infix",
 };
-export function binOp(op, x, y) {
+function binOp(op, x, y) {
     switch (op) {
         case "+":
             return x + y;
@@ -50,7 +53,8 @@ export function binOp(op, x, y) {
             throw new Error(`Unknown binary operation: ${op}`);
     }
 }
-export function unOp(op, x) {
+exports.binOp = binOp;
+function unOp(op, x) {
     switch (op) {
         case "u+":
             return x;
@@ -60,10 +64,12 @@ export function unOp(op, x) {
             throw new Error(`Unknown binary operation: ${op}`);
     }
 }
-export function isUnOp(s) {
+exports.unOp = unOp;
+function isUnOp(s) {
     return s === "u+" || s === "u-";
 }
-export function isBinOp(c) {
+exports.isUnOp = isUnOp;
+function isBinOp(c) {
     return (c === "+" ||
         c === "-" ||
         c === "*" ||
@@ -72,3 +78,4 @@ export function isBinOp(c) {
         c === "**" ||
         c === "=");
 }
+exports.isBinOp = isBinOp;

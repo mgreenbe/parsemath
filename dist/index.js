@@ -1,6 +1,11 @@
-import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
-import Tokenizer from "./Tokenizer";
-export default class Parser {
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const Ops_1 = require("./Ops");
+const Tokenizer_1 = __importDefault(require("./Tokenizer"));
+class Parser {
     constructor(s, scope = {}) {
         this.index = 0;
         this.ops = [];
@@ -8,7 +13,7 @@ export default class Parser {
         this.s = s;
         this.scope = scope;
         const allowedIdents = Object.keys(scope);
-        const tokenizer = new Tokenizer(s, allowedIdents);
+        const tokenizer = new Tokenizer_1.default(s, allowedIdents);
         this.ts = tokenizer.tokenize();
     }
     parse() {
@@ -46,11 +51,11 @@ export default class Parser {
                         else if (op[0] === "LParen") {
                             this.ops.push(op, t);
                         }
-                        else if (prec[t[1]] > prec[op[1]] ||
-                            (prec[t[1]] === prec[op[1]] && assoc[t[1]] === "right") ||
-                            (prec[t[1]] <= prec[op[1]] &&
-                                isUnOp(t[1]) &&
-                                fixity[t[1]] === "prefix")) {
+                        else if (Ops_1.prec[t[1]] > Ops_1.prec[op[1]] ||
+                            (Ops_1.prec[t[1]] === Ops_1.prec[op[1]] && Ops_1.assoc[t[1]] === "right") ||
+                            (Ops_1.prec[t[1]] <= Ops_1.prec[op[1]] &&
+                                Ops_1.isUnOp(t[1]) &&
+                                Ops_1.fixity[t[1]] === "prefix")) {
                             this.ops.push(op, t);
                         }
                         else {
@@ -79,13 +84,13 @@ export default class Parser {
         return this.vals[0];
     }
     evalOp(op) {
-        if (isBinOp(op[1])) {
+        if (Ops_1.isBinOp(op[1])) {
             const y = this.vals.pop();
             const x = this.vals.pop();
             if (x === undefined || y === undefined) {
                 this.throwError("Unspecified parsing error.");
             }
-            this.vals.push(binOp(op[1], x, y));
+            this.vals.push(Ops_1.binOp(op[1], x, y));
         }
         else {
             // unary op
@@ -93,7 +98,7 @@ export default class Parser {
             if (x === undefined) {
                 this.throwError(`Expected argument of ${op[1]}`, op);
             }
-            this.vals.push(unOp(op[1], x));
+            this.vals.push(Ops_1.unOp(op[1], x));
         }
     }
     throwError(m, t) {
@@ -105,3 +110,4 @@ export default class Parser {
         }
     }
 }
+exports.default = Parser;
