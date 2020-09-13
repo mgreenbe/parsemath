@@ -1,13 +1,8 @@
 import { Tok, TokType } from "./Types";
 
-const desc = {
-  Num: "number",
-  Ident: "identifier",
-};
-
 export default class Tokenizer {
   s: string;
-  index: number = 0;
+  index = 0;
   allowedIdents: string[];
 
   constructor(s: string, allowedIdents: string[] = []) {
@@ -17,10 +12,10 @@ export default class Tokenizer {
 
   tokenize(): Tok[] {
     this.skipWhitespace();
-    let ts: Tok[] = [];
+    const ts: Tok[] = [];
     while (this.index < this.s.length) {
-      let cur = this.s[this.index];
-      let prev = ts[ts.length - 1];
+      const cur = this.s[this.index];
+      const prev = ts[ts.length - 1];
       switch (cur) {
         case "(":
           this.isValidTokCharOrder(prev, "LParen", cur);
@@ -42,7 +37,7 @@ export default class Tokenizer {
         case "+":
         case "-":
           {
-            let top = ts[ts.length - 1];
+            const top = ts[ts.length - 1];
             if (
               top &&
               (top[0] === "Num" || top[0] === "Ident" || top[0] === "RParen")
@@ -57,6 +52,7 @@ export default class Tokenizer {
           break;
         case "/":
         case "^":
+        case "=":
           this.isValidTokCharOrder(prev, "BinOp", cur);
           ts.push(["BinOp", cur, this.index++]);
           break;
@@ -73,7 +69,7 @@ export default class Tokenizer {
         case ".":
           {
             this.isValidTokCharOrder(prev, "Num", cur);
-            let [num, i] = this.scanNumber();
+            const [num, i] = this.scanNumber();
             ts.push(["Num", num, i]);
           }
           break;
@@ -133,7 +129,7 @@ export default class Tokenizer {
         case "_":
           {
             this.isValidTokCharOrder(prev, "Ident", cur);
-            let [ident, i] = this.scanIdent();
+            const [ident, i] = this.scanIdent();
             if (!this.allowedIdents.includes(ident)) {
               this.throwError(
                 `Unknown identifier '${ident}' at position ${i}.`,
@@ -152,7 +148,7 @@ export default class Tokenizer {
       }
       this.skipWhitespace();
     }
-    let last = ts[ts.length - 1];
+    const last = ts[ts.length - 1];
     if (last === undefined) {
       throw new Error("Empty expression.");
     } else if (
@@ -165,14 +161,14 @@ export default class Tokenizer {
     return ts;
   }
 
-  skipWhitespace() {
+  skipWhitespace(): void {
     while (this.s[this.index]?.trim() === "") {
       this.index++;
     }
   }
 
   scanNumber(): [number, number] {
-    let start = this.index;
+    const start = this.index;
     if (this.s[this.index] === ".") {
       this.index++;
       if (isDigit(this.s[this.index])) {
@@ -223,7 +219,7 @@ export default class Tokenizer {
   }
 
   scanIdent(): [string, number] {
-    let start = this.index++;
+    const start = this.index++;
     while (isIdentChar(this.s[this.index])) {
       this.index++;
     }
@@ -235,7 +231,7 @@ export default class Tokenizer {
     tokType: TokType,
     cur: string
   ): true {
-    let p: TokType | undefined = prev?.[0];
+    const p: TokType | undefined = prev?.[0];
     switch (p) {
       case undefined:
       case "UnOp":
@@ -254,12 +250,7 @@ export default class Tokenizer {
         if (tokType === "Ident") {
           this.throwError(`Unexpected identifier at position ${this.index}.`);
         }
-        if (
-          tokType === "Num" ||
-          tokType === "UnOp" ||
-          tokType === "LParen" ||
-          tokType === "Ident"
-        ) {
+        if (tokType === "UnOp" || tokType === "LParen") {
           this.throwError(`Unexpected '${cur}' at position ${this.index}.`);
         }
         break;
@@ -272,14 +263,14 @@ export default class Tokenizer {
     return true;
   }
 
-  throwError(m: string, i = this.index) {
+  throwError(m: string, i = this.index): never {
     throw new Error(
       `${m}\n\n${this.s}\n${" ".repeat(i)}\u25B2\n${"\u2500".repeat(i)}\u256F`
     );
   }
 }
 
-export function isDigit(c: any) {
+export function isDigit(c: unknown): boolean {
   return (
     c === "0" ||
     c === "1" ||
@@ -294,7 +285,7 @@ export function isDigit(c: any) {
   );
 }
 
-export function isLetter(s: any) {
+export function isLetter(s: unknown): boolean {
   return (
     typeof s === "string" &&
     s.length === 1 &&
@@ -303,10 +294,6 @@ export function isLetter(s: any) {
   );
 }
 
-export function isIdentChar(s: any) {
+export function isIdentChar(s: unknown): boolean {
   return isLetter(s) || isDigit(s) || s === "$" || s === "_";
 }
-
-// let s = ".%2exxx";
-// let tokenizer = new Tokenizer(s, ["xxx", "yy", "z"]);
-// console.log(tokenizer.tokenize());

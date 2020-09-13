@@ -1,1 +1,13 @@
-{}
+{
+  "compilerOptions": {
+    "strict": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "module": "es6",
+    "target": "es2019",
+    "outDir": "dist",
+
+    "moduleResolution": "node"
+  },
+  "exclude": ["node_modules", "dist"]
+}

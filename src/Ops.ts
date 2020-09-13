@@ -8,14 +8,15 @@ import {
 } from "./Types";
 
 export const prec: Record<Op, Prec> = {
-  "+": 0,
-  "u+": 1,
-  "-": 0,
-  "u-": 1,
-  "*": 2,
-  "/": 2,
-  "^": 3,
-  "**": 3,
+  "=": 0,
+  "+": 1,
+  "-": 1,
+  "u+": 2,
+  "u-": 2,
+  "*": 3,
+  "/": 3,
+  "^": 4,
+  "**": 4,
 };
 
 export const assoc: Record<Op, Assoc> = {
@@ -27,6 +28,7 @@ export const assoc: Record<Op, Assoc> = {
   "/": "left",
   "^": "right",
   "**": "right",
+  "=": "left",
 };
 
 export const fixity: Record<Op, Fix> = {
@@ -38,6 +40,7 @@ export const fixity: Record<Op, Fix> = {
   "/": "infix",
   "^": "infix",
   "**": "infix",
+  "=": "infix",
 };
 
 export function binOp(op: BinOp, x: number, y: number): number {
@@ -53,6 +56,9 @@ export function binOp(op: BinOp, x: number, y: number): number {
     case "^":
     case "**":
       return Math.pow(x, y);
+    case "=":
+      return Math.abs(x - y) < 1e-8 ? 1 : 0;
+
     default:
       throw new Error(`Unknown binary operation: ${op}`);
   }
@@ -75,6 +81,12 @@ export function isUnOp(s: string): s is UnOp {
 
 export function isBinOp(c: string): c is BinOp {
   return (
-    c === "+" || c === "-" || c === "*" || c === "/" || c === "^" || c === "**"
+    c === "+" ||
+    c === "-" ||
+    c === "*" ||
+    c === "/" ||
+    c === "^" ||
+    c === "**" ||
+    c === "="
   );
 }

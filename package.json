@@ -1,12 +1,13 @@
 {
-  "name": "expr",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "parsemath",
+  "version": "0.1.0",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "build": "tsc",
+    "lint": "eslint . --ext .ts"
   },
   "keywords": [],
-  "author": "",
+  "author": "Matthew Greenberg",
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^26.0.13",
@@ -15,5 +16,7 @@
     "typescript": "^4.0.2"
   },
   "dependencies": {},
-  "description": ""
+  "description": "A simple arithmetic expression parser.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
 }

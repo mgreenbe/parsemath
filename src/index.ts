@@ -1,7 +1,7 @@
-import { Op, OpTok, LParenTok, Scope, Tok } from "./Types";
+import { OpTok, LParenTok, Scope, Tok } from "./Types";
 import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
 
-import Tokenizer from "./Tokenize";
+import Tokenizer from "./Tokenizer";
 
 export default class Parser {
   s: string;
@@ -14,14 +14,14 @@ export default class Parser {
   constructor(s: string, scope: Scope = {}) {
     this.s = s;
     this.scope = scope;
-    let allowedIdents = Object.keys(scope);
-    let tokenizer = new Tokenizer(s, allowedIdents);
+    const allowedIdents = Object.keys(scope);
+    const tokenizer = new Tokenizer(s, allowedIdents);
     this.ts = tokenizer.tokenize();
   }
 
   parse(): number {
     while (this.index < this.ts.length) {
-      let t = this.ts[this.index++];
+      const t = this.ts[this.index++];
       switch (t[0]) {
         case "Num":
           this.vals.push(t[1]);
@@ -34,12 +34,12 @@ export default class Parser {
           break;
         case "RParen":
           {
-            let op = this.ops.pop();
+            const op = this.ops.pop();
             if (op === undefined) {
               this.throwError(`Unmatched ')' at ${t[2]}.`, t);
             }
             if (op[0] !== "LParen") {
-              this.evalOp(op[1]);
+              this.evalOp(op);
               this.index--;
             }
           }
@@ -47,7 +47,7 @@ export default class Parser {
         case "UnOp":
         case "BinOp":
           {
-            let op = this.ops.pop();
+            const op = this.ops.pop();
             if (op === undefined) {
               this.ops.push(t);
             } else if (op[0] === "LParen") {
@@ -62,7 +62,7 @@ export default class Parser {
               this.ops.push(op, t);
             } else {
               this.index--;
-              this.evalOp(op[1]);
+              this.evalOp(op);
             }
           }
           break;
@@ -72,35 +72,38 @@ export default class Parser {
     }
     // All tokens processed.
     // Clear out operation and value stacks.
-    let op: OpTok | LParenTok;
+    let op: OpTok | LParenTok | undefined;
     while ((op = this.ops.pop())) {
       if (op[0] === "LParen") {
         this.throwError(`Unmatched '(' at position ${op[2]}.`, op);
         // throw new Error("Unexpected '('.");
       } else {
-        this.evalOp(op[1]);
+        this.evalOp(op);
       }
     }
     console.assert(this.vals.length === 1);
     return this.vals[0];
   }
 
-  evalOp(op: Op): void {
-    if (isBinOp(op)) {
-      let y = this.vals.pop();
-      let x = this.vals.pop();
+  evalOp(op: OpTok): void {
+    if (isBinOp(op[1])) {
+      const y = this.vals.pop();
+      const x = this.vals.pop();
       if (x === undefined || y === undefined) {
         this.throwError("Unspecified parsing error.");
       }
-      this.vals.push(binOp(op, x, y));
+      this.vals.push(binOp(op[1], x, y));
     } else {
       // unary op
-      let x = this.vals.pop();
-      this.vals.push(unOp(op, x));
+      const x = this.vals.pop();
+      if (x === undefined) {
+        this.throwError(`Expected argument of ${op[1]}`, op);
+      }
+      this.vals.push(unOp(op[1], x));
     }
   }
 
-  throwError(m: string, t?: Tok) {
+  throwError(m: string, t?: Tok): never {
     if (t === undefined) {
       throw new Error(m);
     } else {
@@ -112,7 +115,3 @@ export default class Parser {
     }
   }
 }
-
-// let expr = "(-1)x";
-// let P = new Parser(expr, { sin: 0, x: 2 });
-// console.log(P.parse());
