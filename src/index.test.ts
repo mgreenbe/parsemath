@@ -1,4 +1,4 @@
-import Parser from "./index";
+import parse from "./index";
 
 const exprs = [
   "1+2",
@@ -17,56 +17,48 @@ const exprs = [
 
 for (const expr of exprs) {
   test(expr, () => {
-    const P = new Parser(expr);
-    expect(P.parse()).toBe(eval(expr.replace(/\^/g, "**")));
+    expect(parse(expr)).toBe(eval(expr.replace(/\^/g, "**")));
   });
 }
 
 test("-2^-3^-2", () => {
   const expr = "-2^-3^-2";
-  const P = new Parser(expr);
-  expect(P.parse()).toBe(-Math.pow(2, -Math.pow(3, -2)));
+  expect(parse(expr)).toBe(-Math.pow(2, -Math.pow(3, -2)));
 });
 
 test("x+1", () => {
   const expr = "x+1";
-  const P = new Parser(expr, { x: 666 });
-  expect(P.parse()).toBe(667);
+  expect(parse(expr, { x: 666 })).toBe(667);
 });
 
 test("-2*x^(11.1e-1*x)", () => {
   const x = 3;
   const expr = "-2*x^(11.1e-1*x)";
-  const P = new Parser(expr, { x });
-  expect(P.parse()).toBe(eval(expr.replace(/\^/g, "**")));
+  expect(parse(expr, { x })).toBe(eval(expr.replace(/\^/g, "**")));
 });
 
 test("x^2.1 + x/(0.1e1*y   +  1) + y**-.2e1", () => {
   const x = 3;
   const y = 4;
   const expr = "x^2.1 + x/(0.1e1*y   +  1) + y**-.2e1";
-  const P = new Parser(expr, { x, y });
-  expect(P.parse()).toBe(eval(expr.replace(/\^/g, "**")));
+  expect(parse(expr, { x, y })).toBe(eval(expr.replace(/\^/g, "**")));
 });
 
 test("2+2=5", () => {
   const expr = "2+2=5";
-  const P = new Parser(expr);
-  expect(P.parse()).toBe(0);
+  expect(parse(expr)).toBe(0);
 });
 
 test("2+2=4", () => {
   const expr = "2+2=4";
-  const P = new Parser(expr);
-  expect(P.parse()).toBe(1);
+  expect(parse(expr)).toBe(1);
 });
 
 test("x^2 - y^2 = (x - y)*(x + y)", () => {
   const x = 3.14;
   const y = 2.71;
   const expr = "x^2 - y^2 = (x - y)*(x + y)";
-  const P = new Parser(expr, { x, y });
-  expect(P.parse()).toBe(1);
+  expect(parse(expr, { x, y })).toBe(1);
 });
 
 test("Euler's four square identity", () => {
@@ -85,6 +77,5 @@ test("Euler's four square identity", () => {
              (a1 * b3 - a2 * b4 + a3 * b1 + a4 * b2)^2 +
              (a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1)^2`;
   const expr = `${lhs}=${rhs}`;
-  const P = new Parser(expr, { a1, a2, a3, a4, b1, b2, b3, b4 });
-  expect(P.parse()).toBe(1);
+  expect(parse(expr, { a1, a2, a3, a4, b1, b2, b3, b4 })).toBe(1);
 });
