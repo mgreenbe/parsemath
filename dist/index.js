@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.parse = void 0;
 const Ops_1 = require("./Ops");
 const Tokenizer_1 = __importDefault(require("./Tokenizer"));
 function parse(s, scope = {}) {
@@ -103,4 +104,4 @@ function parse(s, scope = {}) {
         }
     }
 }
-exports.default = parse;
+exports.parse = parse;

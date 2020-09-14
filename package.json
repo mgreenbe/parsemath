@@ -20,7 +20,6 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^26.0.13",
     "jest": "^26.4.2",

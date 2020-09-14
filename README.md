@@ -16,9 +16,29 @@ npm install parsemath
 
 ### Use
 ```ts
-import {parse} from "parsemath"
+import {parse} from "parsemath" // or let {parse} = require("parsemath")
 
 let value = parse("x^2 + x + 1", {x: 1e-1})
 console.log(value) // 1.11
+```
+
+Some useful error messages:
+```ts
+parse("(x-y)(x+y)", { x: 1, y: 2 });
+// Error: Unexpected '(' at position 5.
+
+// (x-y)(x+y)
+//      ▲
+// ─────╯
+```
+
+Throws when it encounters an unspecified variable
+```ts
+parse("x^2 + y + 1" {x: 1e-1})
+// Error: Unknown identifier 'y' at position 6.
+//
+// x^2 + y + 1
+//       ▲
+// ──────╯
 ```
 
