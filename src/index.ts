@@ -2,7 +2,7 @@ import { OpTok, LParenTok, Scope, Tok } from "./Types";
 import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
 import tokenize from "./Tokenizer";
 
-export default function parse(s: string, scope: Scope = {}): number {
+export function parse(s: string, scope: Scope = {}): number {
   const allowedIdents = Object.keys(scope);
   const ts = tokenize(s, allowedIdents);
   const ops: (OpTok | LParenTok)[] = [];
