@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Ops_1 = require("./Ops");
-const Tokenizer_1 = __importDefault(require("./Tokenizer"));
+const Tokenizer2_1 = __importDefault(require("./Tokenizer2"));
 class Parser {
     constructor(s, scope = {}) {
         this.index = 0;
@@ -13,8 +13,8 @@ class Parser {
         this.s = s;
         this.scope = scope;
         const allowedIdents = Object.keys(scope);
-        const tokenizer = new Tokenizer_1.default(s, allowedIdents);
-        this.ts = tokenizer.tokenize();
+        // const tokenizer = new Tokenizer(s, allowedIdents);
+        this.ts = Tokenizer2_1.default(s, allowedIdents);
     }
     parse() {
         while (this.index < this.ts.length) {

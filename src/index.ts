@@ -1,7 +1,7 @@
 import { OpTok, LParenTok, Scope, Tok } from "./Types";
 import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
 
-import Tokenizer from "./Tokenizer";
+import tokenize from "./Tokenizer2";
 
 export default class Parser {
   s: string;
@@ -15,8 +15,8 @@ export default class Parser {
     this.s = s;
     this.scope = scope;
     const allowedIdents = Object.keys(scope);
-    const tokenizer = new Tokenizer(s, allowedIdents);
-    this.ts = tokenizer.tokenize();
+    // const tokenizer = new Tokenizer(s, allowedIdents);
+    this.ts = tokenize(s, allowedIdents);
   }
 
   parse(): number {
