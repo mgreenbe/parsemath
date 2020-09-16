@@ -1,4 +1,5 @@
 import { parse } from "./index";
+import { Vector } from "./Types";
 
 const exprs = [
   "1+2",
@@ -78,4 +79,14 @@ test("Euler's four square identity", () => {
              (a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1)^2`;
   const expr = `${lhs}=${rhs}`;
   expect(parse(expr, { a1, a2, a3, a4, b1, b2, b3, b4 })).toBe(1);
+});
+
+const i = new Vector(1, 0, 0);
+const j = new Vector(0, 1, 0);
+const k = new Vector(0, 0, 1);
+
+test("i, j, k", () => {
+  const expr = "1.1*i + 2e-1*j - 2.e2*k";
+  const value = parse(expr, { i, j, k });
+  expect(value instanceof Vector && value.equals(new Vector(1.1, 2e-1, 2e2)));
 });

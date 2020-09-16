@@ -1,12 +1,12 @@
-import { OpTok, LParenTok, Scope, Tok } from "./Types";
+import { Vector, OpTok, LParenTok, Scope, Tok } from "./Types";
 import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
 import tokenize from "./Tokenizer";
 
-export function parse(s: string, scope: Scope = {}): number {
+export function parse(s: string, scope: Scope = {}): number | Vector {
   const allowedIdents = Object.keys(scope);
   const ts = tokenize(s, allowedIdents);
   const ops: (OpTok | LParenTok)[] = [];
-  const vals: number[] = [];
+  const vals: (number | Vector)[] = [];
   let index = 0;
 
   while (index < ts.length) {
