@@ -61,15 +61,7 @@ export function binOp(
         if (typeof y === "number") {
           throw new Error("You can't add a number to a vector");
         } else {
-          if (x.length === y.length) {
-            return new Vector(...x.map((xi, i) => xi + y[i]));
-          } else {
-            throw new Error(
-              `You can't add ${JSON.stringify(x)} and ${JSON.stringify(
-                y
-              )} because they have different lengths.`
-            );
-          }
+          return x.plus(y);
         }
       }
     case "-":
@@ -83,15 +75,7 @@ export function binOp(
         if (typeof y === "number") {
           throw new Error("You can't subtract a number from a vector");
         } else {
-          if (x.length === y.length) {
-            return new Vector(...x.map((xi, i) => xi - y[i]));
-          } else {
-            throw new Error(
-              `You can't subtract ${JSON.stringify(y)} from ${JSON.stringify(
-                x
-              )} because they have different lengths.`
-            );
-          }
+          return x.minus(y);
         }
       }
     case "*":
@@ -103,7 +87,7 @@ export function binOp(
         }
       } else {
         if (typeof y === "number") {
-          return new Vector(...x.map((xi, i) => y * x[i]));
+          return x.stimes(y);
         } else {
           throw new Error(`You can't multiply vectors.`);
         }
@@ -117,7 +101,7 @@ export function binOp(
         }
       } else {
         if (typeof y === "number") {
-          return new Vector(...x.map((xi, i) => x[i] / y));
+          return x.sdiv(y);
         } else {
           throw new Error(`You can't divide vectors.`);
         }

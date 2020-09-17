@@ -86,7 +86,18 @@ const j = new Vector(0, 1, 0);
 const k = new Vector(0, 0, 1);
 
 test("i, j, k", () => {
-  const expr = "1.1*i + 2e-1*j - 2.e2*k";
+  const expr = "1.1*i + 2e-1*j - 2.e2*k/2";
   const value = parse(expr, { i, j, k });
-  expect(value instanceof Vector && value.equals(new Vector(1.1, 2e-1, 2e2)));
+  expect(value instanceof Vector && value.equals(new Vector(1.1, 0.2, 100)));
+});
+
+test("distributive law for vectors", () => {
+  const a = Math.random();
+  const b = new Vector(Math.random(), Math.random(), Math.random());
+  const c = new Vector(Math.random(), Math.random(), Math.random());
+  const lhs = parse("a*(b-c)", { a, b, c });
+  const rhs = parse("a*b-a*c", { a, b, c });
+  expect(
+    lhs instanceof Vector && rhs instanceof Vector && lhs.equals(rhs)
+  ).toBe(true);
 });

@@ -2,10 +2,47 @@ export class Vector extends Array<number> {
   static isVector(x: unknown): x is Vector {
     return x instanceof Vector && Array.isArray(x);
   }
-  equals(y: Vector): boolean {
+
+  plus(y: Vector): Vector {
+    if (y.length === this.length) {
+      return new Vector(...this.map((xi, i) => xi + y[i]));
+    } else {
+      throw new Error("Terms have incompatible sizes.");
+    }
+  }
+
+  minus(y: Vector): Vector {
+    if (y.length === this.length) {
+      return new Vector(...this.map((xi, i) => xi - y[i]));
+    } else {
+      throw new Error("Arguments have incompatible sizes.");
+    }
+  }
+
+  stimes(y: number): Vector {
+    return new Vector(...this.map((xi) => xi * y));
+  }
+
+  sdiv(y: number): Vector {
+    return new Vector(...this.map((xi) => xi / y));
+  }
+
+  dtimes(y: Vector): number {
+    if (y.length === this.length) {
+      let ans = 0;
+      for (let i = 0; i < this.length; i++) {
+        ans += this[i] * y[i];
+      }
+      return ans;
+    } else {
+      throw new Error("Arguments have incompatible sizes.");
+    }
+  }
+
+  equals(y: Vector, eps = 1e-8): boolean {
     return (
       this.length === y.length &&
-      this.map((xi, i) => Math.abs(xi - y[i]) < 1e-8).every((x) => x)
+      this.map((xi, i) => Math.abs(xi - y[i]) < eps).every((x) => x)
     );
   }
 }
