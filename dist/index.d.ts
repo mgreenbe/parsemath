@@ -1,2 +1,4 @@
 import { Scope } from "./Types";
-export declare function parse(s: string, scope?: Scope): number;
+declare type Fns = Record<string, (x: number) => number>;
+export declare function parse(s: string, scope?: Scope, fns?: Fns): number;
+export {};

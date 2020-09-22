@@ -239,7 +239,7 @@ export default function tokenize(s: string, allowedIdents: string[]): Tok[] {
         if (tokType === "Ident") {
           throwError(`Unexpected identifier at position ${index}.`);
         }
-        if (tokType === "UnOp" || tokType === "LParen") {
+        if (tokType === "UnOp" /* || tokType === "LParen"*/) {
           throwError(`Unexpected '${cur}' at position ${index}.`);
         }
         break;

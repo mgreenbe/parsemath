@@ -6,8 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = void 0;
 const Ops_1 = require("./Ops");
 const Tokenizer_1 = __importDefault(require("./Tokenizer"));
-function parse(s, scope = {}) {
-    const allowedIdents = Object.keys(scope);
+function parse(s, scope = {}, fns = {}) {
+    const allowedIdents = [...Object.keys(scope), ...Object.keys(fns)];
     const ts = Tokenizer_1.default(s, allowedIdents);
     const ops = [];
     const vals = [];
@@ -19,7 +19,12 @@ function parse(s, scope = {}) {
                 vals.push(t[1]);
                 break;
             case "Ident":
-                vals.push(scope[t[1]]);
+                if (t[1] in scope) {
+                    vals.push(scope[t[1]]);
+                }
+                else if (t[1] in fns) {
+                    ops.push(t);
+                }
                 break;
             case "LParen":
                 ops.push(t);
@@ -30,7 +35,9 @@ function parse(s, scope = {}) {
                     if (op === undefined) {
                         throwError(`Unmatched ')' at ${t[2]}.`, t);
                     }
-                    if (op[0] !== "LParen") {
+                    if (op[0] === "Ident") {
+                    }
+                    else if (op[0] !== "LParen") {
                         evalOp(op);
                         index--;
                     }
@@ -45,6 +52,8 @@ function parse(s, scope = {}) {
                     }
                     else if (op[0] === "LParen") {
                         ops.push(op, t);
+                    }
+                    else if (op[0] === "Ident") {
                     }
                     else if (Ops_1.prec[t[1]] > Ops_1.prec[op[1]] ||
                         (Ops_1.prec[t[1]] === Ops_1.prec[op[1]] && Ops_1.assoc[t[1]] === "right") ||
@@ -71,6 +80,9 @@ function parse(s, scope = {}) {
             throwError(`Unmatched '(' at position ${op[2]}.`, op);
             // throw new Error("Unexpected '('.");
         }
+        else if (op[0] === "Ident") {
+            evalOp(op);
+        }
         else {
             evalOp(op);
         }
@@ -78,7 +90,14 @@ function parse(s, scope = {}) {
     console.assert(vals.length === 1);
     return vals[0];
     function evalOp(op) {
-        if (Ops_1.isBinOp(op[1])) {
+        if (op[0] === "Ident") {
+            const x = vals.pop();
+            if (x === undefined) {
+                throwError("Unspecified parsing error.");
+            }
+            vals.push(fns[op[1]](x));
+        }
+        else if (Ops_1.isBinOp(op[1])) {
             const y = vals.pop();
             const x = vals.pop();
             if (x === undefined || y === undefined) {

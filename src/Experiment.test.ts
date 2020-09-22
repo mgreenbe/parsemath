@@ -1,27 +1,28 @@
-import { parse } from "./index";
+import Parser from "./Experiment";
 
-test.only("function application", () => {
-  const expr = "addOne(3)";
-  const addOne = (x: number) => {
-    console.log("\n\nHello!!!! \n\n");
-    return x + 1;
-  };
-  expect(parse(expr, {}, { addOne })).toBe(4);
+function parse(expr: string, scope?: Record<string, number>) {
+  let P = new Parser(expr, scope);
+  return P.parse();
+}
+
+test("function application", () => {
+  const expr = "sqrt(4)";
+  let P = new Parser(expr);
+  expect(P.parse()).toBe(2);
 });
 
 const exprs = [
   "1+2",
-  "2.+.3*4e2",
-  ".2*3.5+-+.4e-5",
-  "2+3.09/-.222-4",
-  "2+3.09/-.222-4",
+  "2.+0.3*4e2",
+  "0.2*3.5+-+0.4e-5",
+  "2+3.09/-0.222-4",
+  "2+3.09/-0.222-4",
   "2/3*4",
-  ".123+0.234*3.56+4.39e2*5.+.6e1",
+  "0.123+0.234*3.56+4.39e2*5.+0.6e1",
   "1-2*3+4/5-6",
-  "(2.2e0+.3e2)/4.e-1",
+  "(2.2e0+0.3e2)/4.e-1",
   "((2+3))*(4)",
-  "2.001^3.2^.2",
-  "2e1**2**3*3",
+  "2.001^3.2^0.2",
 ];
 
 for (const expr of exprs) {
@@ -46,10 +47,10 @@ test("-2*x^(11.1e-1*x)", () => {
   expect(parse(expr, { x })).toBe(eval(expr.replace(/\^/g, "**")));
 });
 
-test("x^2.1 + x/(0.1e1*y   +  1) + y**-.2e1", () => {
+test("x^2.1 + x/(0.1e1*y   +  1) + y^-0.2e1", () => {
   const x = 3;
   const y = 4;
-  const expr = "x^2.1 + x/(0.1e1*y   +  1) + y**-.2e1";
+  const expr = "x^2.1 + x/(0.1e1*y   +  1) + y^-0.2e1";
   expect(parse(expr, { x, y })).toBe(eval(expr.replace(/\^/g, "**")));
 });
 
@@ -71,14 +72,14 @@ test("x^2 - y^2 = (x - y)*(x + y)", () => {
 });
 
 test("Euler's four square identity", () => {
-  const a1 = 1,
-    a2 = 2,
-    a3 = 3,
-    a4 = 4,
-    b1 = 5,
-    b2 = 6,
-    b3 = 7,
-    b4 = 8;
+  const a1 = 1.1,
+    a2 = -2.2,
+    a3 = 3.3,
+    a4 = -4.4,
+    b1 = 5.5,
+    b2 = -6.6,
+    b3 = 7.7,
+    b4 = -8.8;
   const lhs = `(a1^2 + a2^2 + a3^2 + a4^2) *
              (b1^2 + b2^2 + b3^2 + b4^2)`;
   const rhs = `(a1 * b1 - a2 * b2 - a3 * b3 - a4 * b4)^2 +
