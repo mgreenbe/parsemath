@@ -133,26 +133,25 @@ const NUM_RE = /^\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/;
 const IDENT_RE = /^[a-zA-Z]\w*/;
 
 export default class Parser {
-  src: string;
+  tokenStack: TokenStack;
   vars: Record<string, number>;
   funs: Record<string, (x: number) => number>;
   pos: number = 0;
-  lastTok: Token | undefined; // to distinguish unary and binary +, -
-  tokStack: Token[] = [];
+  // tokStack: Token[] = [];
   valStack: number[] = [];
   opStack: (OpTok | LParenTok | IdentTok)[] = [];
 
   //   mode: Mode = "EXPR";
 
   constructor(src: string, vars: Record<string, number> = {}) {
-    this.src = src;
+    this.tokenStack = new TokenStack(src);
     this.vars = vars;
     this.funs = funs;
   }
 
   parse(): number {
     let t: Token | undefined;
-    while ((t = this.getToken())) {
+    while ((t = this.tokenStack.pop())) {
       if (t.type === "NUM") {
         this.valStack.push(t.value);
       } else if (t.type === "IDENT") {
@@ -162,14 +161,14 @@ export default class Parser {
         } else {
           let f = funs[t.value];
           if (f !== undefined) {
-            let tt = this.getToken();
+            let tt = this.tokenStack.pop();
             if (tt === undefined) {
               throw new Error(`Unexpected end of input.`);
             } else if (tt.type !== "LPAREN") {
               throw new Error(`Expected argument list.`);
             } else {
               this.opStack.push(t);
-              this.tokStack.push(tt);
+              this.tokenStack.push(tt);
             }
           }
         }
@@ -217,7 +216,7 @@ export default class Parser {
               throw new Error(`Argument expected.`);
             } else {
               this.valStack.push(f(arg));
-              this.tokStack.push(t);
+              this.tokenStack.push(t);
             }
           }
         } else if (
@@ -226,7 +225,7 @@ export default class Parser {
         ) {
           this.opStack.push(topOp, t);
         } else if (opData[t.value].prec < opData[topOp.value].prec) {
-          this.tokStack.push(t);
+          this.tokenStack.push(t);
           this.applyOp(topOp);
         } else {
           // equal precedence
@@ -237,19 +236,19 @@ export default class Parser {
           } else if (opData[t.value].assoc === "RTL") {
             this.opStack.push(topOp, t);
           } else {
-            this.tokStack.push(t);
+            this.tokenStack.push(t);
             this.applyOp(topOp);
           }
         }
       }
-      this.lastTok = t;
-      // console.log(
-      //   this.valStack,
-      //   `[${this.opStack.map((x) => x.value).join(", ")}]`
-      // );
+      // this.lastTok = t;
+      console.log(
+        this.valStack,
+        `[${this.opStack.map((x) => x.value).join(", ")}]`
+      );
     }
     // Apply all remaining ops.
-    // console.log("\n\n");
+    console.log("\n\n");
     let op: OpTok | LParenTok | IdentTok | undefined;
     while ((op = this.opStack.pop())) {
       if (op.type === "LPAREN") {
@@ -269,7 +268,7 @@ export default class Parser {
       } else {
         this.applyOp(op);
       }
-      // console.log(this.valStack, this.opStack.map((x) => x.value).join(", "));
+      console.log(this.valStack, this.opStack.map((x) => x.value).join(", "));
     }
     // Check no values left over.
     if (this.valStack.length === 1) {
@@ -291,29 +290,110 @@ export default class Parser {
     this.valStack.push(opData[op.value].apply(...args.reverse()));
   }
 
-  getToken(): Token | undefined {
-    if (this.tokStack.length > 0) {
-      return this.tokStack.pop();
+  // getToken(): Token | undefined {
+  //   if (this.tokStack.length > 0) {
+  //     return this.tokStack.pop();
+  //   }
+  //   this.skipWhitespace();
+  //   let ch = this.src[this.pos];
+  //   if (ch === undefined) {
+  //     return undefined;
+  //   } else if (ch === "(") {
+  //     return lParen(this.pos++);
+  //   } else if (ch === ")") {
+  //     return rParen(this.pos++);
+  //   } else if (ch === "*" || ch === "/" || ch === "^" || ch === "=") {
+  //     return op(this.pos++, ch);
+  //   } else if (ch === "+" || ch === "-") {
+  //     if (
+  //       this.lastTok === undefined ||
+  //       this.lastTok.type === "LPAREN" ||
+  //       this.lastTok.type === "OP"
+  //     ) {
+  //       return op(this.pos++, ch === "+" ? "u+" : "u-");
+  //     } else {
+  //       return op(this.pos++, ch);
+  //     }
+  //   } else if ("0123456789".includes(ch)) {
+  //     let match = NUM_RE.exec(this.src.slice(this.pos));
+  //     if (match === null) {
+  //       throw new Error("This shouldn't have happened!");
+  //     }
+  //     let startPos = this.pos;
+  //     this.pos += match[0].length;
+  //     return num(startPos, this.pos, Number(match[0]));
+  //   } else if (
+  //     (ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) < 91) ||
+  //     (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) < 123)
+  //   ) {
+  //     let match = IDENT_RE.exec(this.src.slice(this.pos));
+  //     if (match === null) {
+  //       throw new Error("This shouldn't have happened!");
+  //     }
+  //     let startPos = this.pos;
+  //     this.pos += match[0].length;
+  //     return ident(startPos, this.pos, match[0]);
+  //   } else {
+  //     throw new Error(`Uexpected character: ${ch}`);
+  //   }
+  // }
+
+  // skipWhitespace(): void {
+  //   while (this.src[this.pos]?.trim() === "") {
+  //     this.pos++;
+  //   }
+  // }
+}
+
+class TokenStack {
+  src: string;
+  pos: number = 0;
+  buf: Token[] = [];
+  cur: Token | undefined = undefined;
+  last: Token | undefined = undefined;
+
+  constructor(src: string) {
+    this.src = src;
+  }
+
+  push(t: Token): void {
+    this.buf.push(t);
+  }
+
+  pop(): Token | undefined {
+    if (this.cur) {
+      this.last = this.cur;
+    }
+    if (this.buf.length > 0) {
+      this.cur = this.buf.pop();
+      return this.cur;
     }
     this.skipWhitespace();
     let ch = this.src[this.pos];
+    console.log(`ch=${ch}, pos=${this.pos}`);
     if (ch === undefined) {
-      return undefined;
+      this.cur = undefined;
+      return this.cur;
     } else if (ch === "(") {
-      return lParen(this.pos++);
+      this.cur = lParen(this.pos++);
+      return this.cur;
     } else if (ch === ")") {
-      return rParen(this.pos++);
+      this.cur = rParen(this.pos++);
+      return this.cur;
     } else if (ch === "*" || ch === "/" || ch === "^" || ch === "=") {
-      return op(this.pos++, ch);
+      this.cur = op(this.pos++, ch);
+      return this.cur;
     } else if (ch === "+" || ch === "-") {
       if (
-        this.lastTok === undefined ||
-        this.lastTok.type === "LPAREN" ||
-        this.lastTok.type === "OP"
+        this.last === undefined ||
+        this.last.type === "LPAREN" ||
+        this.last.type === "OP"
       ) {
-        return op(this.pos++, ch === "+" ? "u+" : "u-");
+        this.cur = op(this.pos++, ch === "+" ? "u+" : "u-");
+        return this.cur;
       } else {
-        return op(this.pos++, ch);
+        this.cur = op(this.pos++, ch);
+        return this.cur;
       }
     } else if ("0123456789".includes(ch)) {
       let match = NUM_RE.exec(this.src.slice(this.pos));
@@ -322,7 +402,8 @@ export default class Parser {
       }
       let startPos = this.pos;
       this.pos += match[0].length;
-      return num(startPos, this.pos, Number(match[0]));
+      this.cur = num(startPos, this.pos, Number(match[0]));
+      return this.cur;
     } else if (
       (ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) < 91) ||
       (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) < 123)
@@ -333,7 +414,8 @@ export default class Parser {
       }
       let startPos = this.pos;
       this.pos += match[0].length;
-      return ident(startPos, this.pos, match[0]);
+      this.cur = ident(startPos, this.pos, match[0]);
+      return this.cur;
     } else {
       throw new Error(`Uexpected character: ${ch}`);
     }
@@ -346,8 +428,14 @@ export default class Parser {
   }
 }
 
-// let P = new Parser("sqrt(2^abs(-2))", { x: 2, y: -3 });
-// console.log(P.parse());
+// let T = new TokenStack("2.+0.3*4e2");
+
+// for (let i = 0; i < 7; i++) {
+//   let t = T.pop();
+//   console.log(t);
+// }
+let P = new Parser("2.+0.3*4e2");
+console.log(P.parse());
 // let t: Token | undefined;
 // while ((t = P.getToken())) {
 //   console.log(t);
