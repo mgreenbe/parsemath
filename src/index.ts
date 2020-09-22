@@ -170,6 +170,6 @@ export default class Parser {
 
 // const x = 3.14;
 // const y = 2.71;
-// const expr = "exp(x+y) = exp(x)*exp(y)";
+// const expr = "z";
 // let P = new Parser(expr, { x, y }, {});
 // console.log(P.parse());

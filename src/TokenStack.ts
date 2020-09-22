@@ -154,7 +154,7 @@ export default class TokenStack {
         if (value !== undefined) {
           this.cur = num(startPos, value);
         } else {
-          throw new Error(`Unknown variable '${value}'`);
+          throw new Error(`Unknown variable '${ident}'`);
         }
       }
       return this.cur;

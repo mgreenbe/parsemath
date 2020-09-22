@@ -1,5 +1,4 @@
-import Parser from "./index";
-import { builtInFuns } from "./BuiltIns";
+import Parser, { builtInFuns } from "./index";
 
 function parse(
   expr: string,
@@ -130,4 +129,10 @@ test("atan2", () => {
   expect(parse(expr2, { x, y }, builtInFuns)).toBe(1);
   const expr3 = "atan2(y,x)=2*atan( y/(sqrt(x^2+y^2)+x) )";
   expect(parse(expr3, { x, y }, builtInFuns)).toBe(1);
+});
+
+test("custom function in 3 variables", () => {
+  let f = (x: number, y: number, z: number) => x * y + y * z + z * x;
+  let expr = "f(x,y,z) = f(z, x, y)";
+  expect(parse(expr, { x: 1, y: 2, z: 3 }, { f })).toBe(1);
 });
