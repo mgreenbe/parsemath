@@ -1,4 +1,4 @@
-import Parser from "./Experiment";
+import Parser from "./index";
 
 function parse(expr: string, scope?: Record<string, number>) {
   let P = new Parser(expr, scope);
@@ -102,4 +102,13 @@ test("Difference of squares of square roots", () => {
   const y = 2.71;
   const expr = "(sqrt(abs(-x)) + sqrt(y))*(sqrt(x) - sqrt(y)) = x - abs(-y)";
   expect(parse(expr, { x, y })).toBe(1);
+});
+
+test("exponentials", () => {
+  const x = 3.14;
+  const y = 2.71;
+  const expr1 = "exp(x+y) = exp(x)*exp(y)";
+  const expr2 = "exp(x)^-2 = 1/exp(2*x)";
+  expect(parse(expr1, { x, y })).toBe(1);
+  expect(parse(expr2, { x, y })).toBe(1);
 });

@@ -1,3 +1,5 @@
+export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=";
+
 interface OperatorProps {
   arity: 1 | 2;
   prec: number;

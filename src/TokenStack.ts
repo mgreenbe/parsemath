@@ -1,4 +1,6 @@
-export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=";
+import { Op } from "./Ops";
+
+export type Token = NumTok | FunTok | LParenTok | RParenTok | OpTok;
 
 export type NumTok = {
   type: "NUM";
@@ -28,8 +30,6 @@ export type OpTok = {
   startPos: number;
   op: Op;
 };
-
-export type Token = NumTok | FunTok | LParenTok | RParenTok | OpTok;
 
 const lParen = (startPos: number): Token => {
   return { type: "LPAREN", startPos };
