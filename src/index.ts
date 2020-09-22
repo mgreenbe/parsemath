@@ -1,121 +1,195 @@
-import { OpTok, LParenTok, Scope, Tok, IdentTok } from "./Types";
-import { prec, assoc, fixity, unOp, binOp, isUnOp, isBinOp } from "./Ops";
-import tokenize from "./Tokenizer";
+import TokenStack, { Token, OpTok, FunTok, LParenTok } from "./TokenStack";
 
-type Fns = Record<string, (x: number) => number>;
+interface OperatorProps {
+  arity: 1 | 2;
+  prec: number;
+  fixity: "PREFIX" | "INFIX" | "POSTFIX";
+  assoc: "LTR" | "RTL";
+  apply: (...args: number[]) => number;
+}
 
-export function parse(s: string, scope: Scope = {}, fns: Fns = {}): number {
-  const allowedIdents = [...Object.keys(scope), ...Object.keys(fns)];
-  const ts = tokenize(s, allowedIdents);
-  const ops: (OpTok | LParenTok | IdentTok)[] = [];
-  const vals: number[] = [];
-  let index = 0;
+const opData: Record<string, OperatorProps> = {
+  //   ",": { arity: 2, prec: 0, fixity: "INFIX", assoc: "LTR" },
+  "=": {
+    arity: 2,
+    prec: 0,
+    fixity: "INFIX",
+    assoc: "LTR",
+    apply: (x, y) => (Math.abs(x - y) < 1e-8 ? 1 : 0),
+  },
+  "+": {
+    arity: 2,
+    prec: 1,
+    fixity: "INFIX",
+    assoc: "LTR",
+    apply: (x, y) => x + y,
+  },
+  "-": {
+    arity: 2,
+    prec: 1,
+    fixity: "INFIX",
+    assoc: "LTR",
+    apply: (x, y) => x - y,
+  },
+  "*": {
+    arity: 2,
+    prec: 2,
+    fixity: "INFIX",
+    assoc: "LTR",
+    apply: (x, y) => x * y,
+  },
+  "/": {
+    arity: 2,
+    prec: 2,
+    fixity: "INFIX",
+    assoc: "LTR",
+    apply: (x, y) => x / y,
+  },
+  "u+": { arity: 1, prec: 3, fixity: "PREFIX", assoc: "RTL", apply: (x) => x },
+  "u-": { arity: 1, prec: 3, fixity: "PREFIX", assoc: "RTL", apply: (x) => -x },
+  //   "**": { arity: 2, prec: 4, fixity: "INFIX", assoc: "RTL" },
+  "^": {
+    arity: 2,
+    prec: 4,
+    fixity: "INFIX",
+    assoc: "RTL",
+    apply: (x, y) => Math.pow(x, y),
+  },
+};
 
-  while (index < ts.length) {
-    const t = ts[index++];
-    switch (t[0]) {
-      case "Num":
-        vals.push(t[1]);
-        break;
-      case "Ident":
-        if (t[1] in scope) {
-          vals.push(scope[t[1]]);
-        } else if (t[1] in fns) {
-          ops.push(t);
-        }
-        break;
-      case "LParen":
-        ops.push(t);
-        break;
-      case "RParen":
-        {
-          const op = ops.pop();
+export default class Parser {
+  tokenStack: TokenStack;
+  vars: Record<string, number>;
+  funs: Record<string, (x: number) => number>;
+  valStack: number[] = [];
+  opStack: (OpTok | LParenTok | FunTok)[] = [];
+
+  constructor(
+    src: string,
+    vars: Record<string, number> = {},
+    funs: Record<string, (...args: number[]) => number> = {}
+  ) {
+    this.tokenStack = new TokenStack(src, vars);
+    this.vars = vars;
+    this.funs = funs;
+  }
+
+  parse(): number {
+    let t: Token | undefined;
+    while ((t = this.tokenStack.pop())) {
+      switch (t.type) {
+        case "NUM":
+          this.valStack.push(t.value);
+          break;
+        case "FUN":
+        case "LPAREN":
+          this.opStack.push(t);
+          break;
+        case "RPAREN": {
+          let op = this.popOps();
           if (op === undefined) {
-            throwError(`Unmatched ')' at ${t[2]}.`, t);
+            throw new Error(`Unmatched ')': ${JSON.stringify(t)}`);
           }
-          if (op[0] === "Ident") {
-          } else if (op[0] !== "LParen") {
-            evalOp(op);
-            index--;
-          }
+          break;
         }
-        break;
-      case "UnOp":
-      case "BinOp":
-        {
-          const op = ops.pop();
-          if (op === undefined) {
-            ops.push(t);
-          } else if (op[0] === "LParen") {
-            ops.push(op, t);
-          } else if (op[0] === "Ident") {
-          } else if (
-            prec[t[1]] > prec[op[1]] ||
-            (prec[t[1]] === prec[op[1]] && assoc[t[1]] === "right") ||
-            (prec[t[1]] <= prec[op[1]] &&
-              isUnOp(t[1]) &&
-              fixity[t[1]] === "prefix")
-          ) {
-            ops.push(op, t);
-          } else {
-            index--;
-            evalOp(op);
+        case "OP":
+          {
+            let top = this.opStack.pop();
+            if (top === undefined) {
+              this.opStack.push(t);
+            } else if (top.type === "FUN") {
+              this.tokenStack.push(t);
+              this.applyFun(top);
+            } else if (top.type === "LPAREN") {
+              this.opStack.push(top, t);
+            } else {
+              let { prec: tPrec, arity: tArity, assoc: tAssoc } = opData[t.op];
+              let { prec: topPrec, arity: topArity, assoc: topAssoc } = opData[
+                top.op
+              ];
+              if (tPrec > topPrec || (tArity === 1 && topArity === 2)) {
+                this.opStack.push(top, t);
+              } else if (tPrec < topPrec) {
+                this.tokenStack.push(t);
+                this.applyOp(top);
+              } else {
+                // equal precedence
+                if (tAssoc !== topAssoc) {
+                  throw new Error(
+                    `All operators with the same precedence must have the same associativity.`
+                  );
+                } else if (tAssoc === "RTL") {
+                  this.opStack.push(top, t);
+                } else {
+                  this.tokenStack.push(t);
+                  this.applyOp(top);
+                }
+              }
+            }
           }
-        }
-        break;
-      default:
-        throw new Error("This shouldn't happen!");
+          break;
+        default:
+          throw new Error(`Unknown token: ${t}`);
+      }
     }
-  }
-  // All tokens processed.
-  // Clear out operation and value stacks.
-  let op: OpTok | LParenTok | IdentTok | undefined;
-  while ((op = ops.pop())) {
-    if (op[0] === "LParen") {
-      throwError(`Unmatched '(' at position ${op[2]}.`, op);
-      // throw new Error("Unexpected '('.");
-    } else if (op[0] === "Ident") {
-      evalOp(op);
-    } else {
-      evalOp(op);
+    // Apply all remaining ops.
+    let op = this.popOps();
+    if (op?.type === "LPAREN") {
+      throw new Error(`Unmatched '(': ${JSON.stringify(op)}`);
     }
-  }
-  console.assert(vals.length === 1);
-  return vals[0];
-
-  function evalOp(op: OpTok | IdentTok): void {
-    if (op[0] === "Ident") {
-      const x = vals.pop();
-      if (x === undefined) {
-        throwError("Unspecified parsing error.");
-      }
-      vals.push(fns[op[1]](x));
-    } else if (isBinOp(op[1])) {
-      const y = vals.pop();
-      const x = vals.pop();
-      if (x === undefined || y === undefined) {
-        throwError("Unspecified parsing error.");
-      }
-      vals.push(binOp(op[1], x, y));
+    // Check no values left over.
+    if (this.valStack.length === 1) {
+      return this.valStack[0];
     } else {
-      // unary op
-      const x = vals.pop();
-      if (x === undefined) {
-        throwError(`Expected argument of ${op[1]}`, op);
-      }
-      vals.push(unOp(op[1], x));
+      throw new Error("Unspecified parsing error!");
     }
   }
 
-  function throwError(m: string, t?: Tok): never {
-    if (t === undefined) {
-      throw new Error(m);
-    } else {
-      throw new Error(
-        `${m}\n\n${s}\n${" ".repeat(t[2])}\u25B2\n${
-          t && "\u2500".repeat(t[2])
-        }\u256F`
-      );
+  popOps(): LParenTok | undefined {
+    let op: OpTok | LParenTok | FunTok | undefined;
+    while ((op = this.opStack.pop())) {
+      if (op.type === "LPAREN") {
+        return op;
+      } else if (op.type === "FUN") {
+        this.applyFun(op);
+      } else {
+        this.applyOp(op);
+      }
     }
+    return op;
+  }
+
+  applyFun(t: FunTok): void {
+    let arg = this.valStack.pop();
+    if (arg === undefined) {
+      throw new Error(`Insufficient arguments for ${t.name}.`);
+    }
+    this.valStack.push(t.apply(arg));
+  }
+
+  applyOp(t: OpTok): void {
+    let args = [];
+    for (let i = 0; i < opData[t.op].arity; i++) {
+      let arg = this.valStack.pop();
+      if (arg === undefined) {
+        throw new Error(`Insufficient arguments for ${t}.`);
+      }
+      args.push(arg);
+    }
+    this.valStack.push(opData[t.op].apply(...args.reverse()));
   }
 }
+
+// let T = new TokenStack("1+abs(x_1_)");
+
+// for (let i = 0; i < 7; i++) {
+//   let t = T.pop();
+//   console.log(t);
+// }
+
+// let P = new Parser("abs()");
+// console.log(P.parse());
+// let t: Token | undefined;
+// while ((t = P.getToken())) {
+//   console.log(t);
+// }
