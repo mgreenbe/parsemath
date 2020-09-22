@@ -1,77 +1,22 @@
 import TokenStack, { Token, OpTok, FunTok, LParenTok } from "./TokenStack";
+import { builtInFuns, opData } from "./BuiltIns";
 
-interface OperatorProps {
-  arity: 1 | 2;
-  prec: number;
-  fixity: "PREFIX" | "INFIX" | "POSTFIX";
-  assoc: "LTR" | "RTL";
-  apply: (...args: number[]) => number;
-}
+export { builtInFuns };
 
-const opData: Record<string, OperatorProps> = {
-  //   ",": { arity: 2, prec: 0, fixity: "INFIX", assoc: "LTR" },
-  "=": {
-    arity: 2,
-    prec: 0,
-    fixity: "INFIX",
-    assoc: "LTR",
-    apply: (x, y) => (Math.abs(x - y) < 1e-8 ? 1 : 0),
-  },
-  "+": {
-    arity: 2,
-    prec: 1,
-    fixity: "INFIX",
-    assoc: "LTR",
-    apply: (x, y) => x + y,
-  },
-  "-": {
-    arity: 2,
-    prec: 1,
-    fixity: "INFIX",
-    assoc: "LTR",
-    apply: (x, y) => x - y,
-  },
-  "*": {
-    arity: 2,
-    prec: 2,
-    fixity: "INFIX",
-    assoc: "LTR",
-    apply: (x, y) => x * y,
-  },
-  "/": {
-    arity: 2,
-    prec: 2,
-    fixity: "INFIX",
-    assoc: "LTR",
-    apply: (x, y) => x / y,
-  },
-  "u+": { arity: 1, prec: 3, fixity: "PREFIX", assoc: "RTL", apply: (x) => x },
-  "u-": { arity: 1, prec: 3, fixity: "PREFIX", assoc: "RTL", apply: (x) => -x },
-  //   "**": { arity: 2, prec: 4, fixity: "INFIX", assoc: "RTL" },
-  "^": {
-    arity: 2,
-    prec: 4,
-    fixity: "INFIX",
-    assoc: "RTL",
-    apply: (x, y) => Math.pow(x, y),
-  },
-};
+type List<T> = T[];
+type Value = number | List<number>;
 
 export default class Parser {
   tokenStack: TokenStack;
-  vars: Record<string, number>;
-  funs: Record<string, (x: number) => number>;
-  valStack: number[] = [];
+  valStack: Value[] = [];
   opStack: (OpTok | LParenTok | FunTok)[] = [];
 
   constructor(
     src: string,
     vars: Record<string, number> = {},
-    funs: Record<string, (...args: number[]) => number> = {}
+    funs: Record<string, (...args: number[]) => number> = builtInFuns
   ) {
-    this.tokenStack = new TokenStack(src, vars);
-    this.vars = vars;
-    this.funs = funs;
+    this.tokenStack = new TokenStack(src, vars, funs);
   }
 
   parse(): number {
@@ -94,35 +39,37 @@ export default class Parser {
         }
         case "OP":
           {
-            let top = this.opStack.pop();
-            if (top === undefined) {
+            let tt = this.opStack.pop();
+            if (tt === undefined) {
               this.opStack.push(t);
-            } else if (top.type === "FUN") {
+            } else if (tt.type === "FUN") {
               this.tokenStack.push(t);
-              this.applyFun(top);
-            } else if (top.type === "LPAREN") {
-              this.opStack.push(top, t);
+              this.applyFun(tt);
+            } else if (tt.type === "LPAREN") {
+              this.opStack.push(tt, t);
             } else {
-              let { prec: tPrec, arity: tArity, assoc: tAssoc } = opData[t.op];
-              let { prec: topPrec, arity: topArity, assoc: topAssoc } = opData[
-                top.op
+              let { prec: tprec, arity: tarity, assoc: tassoc } = opData[
+                t.name
               ];
-              if (tPrec > topPrec || (tArity === 1 && topArity === 2)) {
-                this.opStack.push(top, t);
-              } else if (tPrec < topPrec) {
+              let { prec: ttprec, arity: ttarity, assoc: ttassoc } = opData[
+                tt.name
+              ];
+              if (tprec > ttprec || (tarity === 1 && ttarity === 2)) {
+                this.opStack.push(tt, t);
+              } else if (tprec < ttprec) {
                 this.tokenStack.push(t);
-                this.applyOp(top);
+                this.applyOp(tt);
               } else {
                 // equal precedence
-                if (tAssoc !== topAssoc) {
+                if (tassoc !== ttassoc) {
                   throw new Error(
                     `All operators with the same precedence must have the same associativity.`
                   );
-                } else if (tAssoc === "RTL") {
-                  this.opStack.push(top, t);
+                } else if (tassoc === "RTL") {
+                  this.opStack.push(tt, t);
                 } else {
                   this.tokenStack.push(t);
-                  this.applyOp(top);
+                  this.applyOp(tt);
                 }
               }
             }
@@ -138,7 +85,7 @@ export default class Parser {
       throw new Error(`Unmatched '(': ${JSON.stringify(op)}`);
     }
     // Check no values left over.
-    if (this.valStack.length === 1) {
+    if (this.valStack.length === 1 && typeof this.valStack[0] === "number") {
       return this.valStack[0];
     } else {
       throw new Error("Unspecified parsing error!");
@@ -164,32 +111,65 @@ export default class Parser {
     if (arg === undefined) {
       throw new Error(`Insufficient arguments for ${t.name}.`);
     }
-    this.valStack.push(t.apply(arg));
+    if (typeof arg === "number") {
+      this.valStack.push(t.apply(arg));
+    } else {
+      this.valStack.push(t.apply(...arg));
+    }
   }
 
   applyOp(t: OpTok): void {
-    let args = [];
-    for (let i = 0; i < opData[t.op].arity; i++) {
-      let arg = this.valStack.pop();
-      if (arg === undefined) {
-        throw new Error(`Insufficient arguments for ${t}.`);
+    switch (t.name) {
+      case "u+":
+      case "u-": {
+        let x = this.valStack.pop();
+        if (x === undefined) {
+          throw new Error(`Not enough arguments for ${t.name}.`);
+        } else if (Array.isArray(x)) {
+          throw new Error(`Can't apply ${t.name} to ${x}.`);
+        } else {
+          this.valStack.push(opData[t.name].apply(x));
+        }
+        break;
       }
-      args.push(arg);
+      case "+":
+      case "-":
+      case "*":
+      case "/":
+      case "^":
+      case "=": {
+        let y = this.valStack.pop();
+        let x = this.valStack.pop();
+        if (x === undefined || y === undefined) {
+          throw new Error(`Not enough arguments for ${t.name}.`);
+        } else if (Array.isArray(x) || Array.isArray(y)) {
+          throw new Error(`Can't apply ${t.name} to ${x}.`);
+        } else {
+          this.valStack.push(opData[t.name].apply(x, y));
+        }
+        break;
+      }
+      case ",": {
+        let y = this.valStack.pop();
+        let x = this.valStack.pop();
+        if (x === undefined || y === undefined) {
+          throw new Error(`Not enough arguments for ${t.name}.`);
+        } else if (Array.isArray(y)) {
+          throw new Error(`Can't apply ${t.name} to ${x}.`);
+        } else {
+          this.valStack.push(opData[t.name].apply(x, y));
+        }
+        break;
+      }
+      default: {
+        throw new Error(`Unknown operation: '${t.name}'`);
+      }
     }
-    this.valStack.push(opData[t.op].apply(...args.reverse()));
   }
 }
 
-// let T = new TokenStack("1+abs(x_1_)");
-
-// for (let i = 0; i < 7; i++) {
-//   let t = T.pop();
-//   console.log(t);
-// }
-
-// let P = new Parser("abs()");
+// const x = 3.14;
+// const y = 2.71;
+// const expr = "exp(x+y) = exp(x)*exp(y)";
+// let P = new Parser(expr, { x, y }, {});
 // console.log(P.parse());
-// let t: Token | undefined;
-// while ((t = P.getToken())) {
-//   console.log(t);
-// }

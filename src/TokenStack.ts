@@ -1,4 +1,4 @@
-import { Op } from "./Ops";
+import { Op, opData } from "./BuiltIns";
 
 export type Token = NumTok | FunTok | LParenTok | RParenTok | OpTok;
 
@@ -28,7 +28,7 @@ export type RParenTok = {
 export type OpTok = {
   type: "OP";
   startPos: number;
-  op: Op;
+  name: Op;
 };
 
 const lParen = (startPos: number): Token => {
@@ -38,7 +38,7 @@ const rParen = (startPos: number): Token => {
   return { type: "RPAREN", startPos };
 };
 const op = (startPos: number, op: Op): Token => {
-  return { type: "OP", startPos, op };
+  return { type: "OP", startPos, name: op };
 };
 const num = (startPos: number, value: number): Token => {
   return { type: "NUM", startPos, value };
@@ -51,28 +51,26 @@ const fun = (
   return { type: "FUN", startPos, name, apply };
 };
 
-const funs: Record<string, (...args: number[]) => number> = {
-  exp: Math.exp,
-  abs: Math.abs,
-  sqrt: Math.sqrt,
-  min: Math.min,
-  max: Math.max,
-};
-
 const NUM_RE = /^\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/;
 const IDENT_RE = /^([a-zA-Z]\w*)\s*(\(?)/;
 
 export default class TokenStack {
   src: string;
   vars: Record<string, number>;
+  funs: Record<string, (...args: number[]) => number>;
   pos: number = 0;
   buf: Token[] = [];
   cur: Token | undefined = undefined;
   last: Token | undefined = undefined;
 
-  constructor(src: string, vars: Record<string, number>) {
+  constructor(
+    src: string,
+    vars: Record<string, number>,
+    funs: Record<string, (...args: number[]) => number>
+  ) {
     this.src = src;
     this.vars = vars;
+    this.funs = funs;
   }
 
   push(t: Token): void {
@@ -103,7 +101,13 @@ export default class TokenStack {
       }
       this.cur = rParen(this.pos++);
       return this.cur;
-    } else if (ch === "*" || ch === "/" || ch === "^" || ch === "=") {
+    } else if (
+      ch === "*" ||
+      ch === "/" ||
+      ch === "^" ||
+      ch === "=" ||
+      ch === ","
+    ) {
       this.cur = op(this.pos++, ch);
       return this.cur;
     } else if (ch === "+" || ch === "-") {
@@ -139,7 +143,7 @@ export default class TokenStack {
       let startPos = this.pos;
       this.pos += ident.length;
       if (match[2]) {
-        let f = funs[ident];
+        let f = this.funs[ident];
         if (f === undefined) {
           throw new Error(`Unknown function '${ident}'`);
         } else {

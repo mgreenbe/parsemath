@@ -1,7 +1,12 @@
 import Parser from "./index";
+import { builtInFuns } from "./BuiltIns";
 
-function parse(expr: string, scope?: Record<string, number>) {
-  let P = new Parser(expr, scope);
+function parse(
+  expr: string,
+  scope: Record<string, number> = {},
+  funs: Record<string, (...args: number[]) => number> = {}
+) {
+  let P = new Parser(expr, scope, funs);
   return P.parse();
 }
 
@@ -94,14 +99,16 @@ test("sqrt(a*b) equals sqrt(a)*sqrt(b)", () => {
   const x = 3.14;
   const y = 2.71;
   const expr = "sqrt(x*y) = sqrt(x)*sqrt(y)";
-  expect(parse(expr, { x, y })).toBe(1);
+  let funs = { sqrt: builtInFuns.sqrt };
+  expect(parse(expr, { x, y }, funs)).toBe(1);
 });
 
 test("Difference of squares of square roots", () => {
   const x = 3.14;
   const y = 2.71;
   const expr = "(sqrt(abs(-x)) + sqrt(y))*(sqrt(x) - sqrt(y)) = x - abs(-y)";
-  expect(parse(expr, { x, y })).toBe(1);
+  let funs = { sqrt: builtInFuns.sqrt, abs: builtInFuns.abs };
+  expect(parse(expr, { x, y }, funs)).toBe(1);
 });
 
 test("exponentials", () => {
@@ -109,6 +116,18 @@ test("exponentials", () => {
   const y = 2.71;
   const expr1 = "exp(x+y) = exp(x)*exp(y)";
   const expr2 = "exp(x)^-2 = 1/exp(2*x)";
-  expect(parse(expr1, { x, y })).toBe(1);
-  expect(parse(expr2, { x, y })).toBe(1);
+  let funs = { exp: builtInFuns.exp };
+  expect(parse(expr1, { x, y }, funs)).toBe(1);
+  expect(parse(expr2, { x, y }, funs)).toBe(1);
+});
+
+test("atan2", () => {
+  const expr1 = "atan2(exp(0),sqrt(1))";
+  expect(parse(expr1, {}, builtInFuns)).toBe(Math.PI / 4);
+  const x = 3.14;
+  const y = 2.71;
+  const expr2 = "atan2(y, x) = atan(y/x)";
+  expect(parse(expr2, { x, y }, builtInFuns)).toBe(1);
+  const expr3 = "atan2(y,x)=2*atan( y/(sqrt(x^2+y^2)+x) )";
+  expect(parse(expr3, { x, y }, builtInFuns)).toBe(1);
 });
