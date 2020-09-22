@@ -136,12 +136,8 @@ export default class Parser {
   tokenStack: TokenStack;
   vars: Record<string, number>;
   funs: Record<string, (x: number) => number>;
-  pos: number = 0;
-  // tokStack: Token[] = [];
   valStack: number[] = [];
   opStack: (OpTok | LParenTok | IdentTok)[] = [];
-
-  //   mode: Mode = "EXPR";
 
   constructor(src: string, vars: Record<string, number> = {}) {
     this.tokenStack = new TokenStack(src);
@@ -175,31 +171,35 @@ export default class Parser {
       } else if (t.type === "LPAREN") {
         this.opStack.push(t);
       } else if (t.type === "RPAREN") {
-        let op: OpTok | LParenTok | IdentTok | undefined;
-        let foundLParen = false;
-        while ((op = this.opStack.pop())) {
-          if (op.type === "LPAREN") {
-            foundLParen = true;
-            break;
-          } else if (op.type === "IDENT") {
-            let f = funs[op.value];
-            if (f === undefined) {
-              throw new Error(`Unknown function: ${op.value}`);
-            } else {
-              let arg = this.valStack.pop();
-              if (arg === undefined) {
-                throw new Error(`Argument expected.`);
-              } else {
-                this.valStack.push(f(arg));
-              }
-            }
-          } else {
-            this.applyOp(op);
-          }
+        let op = this.popOps();
+        if (op === undefined) {
+          throw new Error(`Unmatched ')': ${JSON.stringify(t)}`);
         }
-        if (!foundLParen) {
-          throw new Error(`Unmatched ")"`);
-        }
+
+        // let foundLParen = false;
+        // while ((op = this.opStack.pop())) {
+        //   if (op.type === "LPAREN") {
+        //     foundLParen = true;
+        //     break;
+        //   } else if (op.type === "IDENT") {
+        //     let f = funs[op.value];
+        //     if (f === undefined) {
+        //       throw new Error(`Unknown function: ${op.value}`);
+        //     } else {
+        //       let arg = this.valStack.pop();
+        //       if (arg === undefined) {
+        //         throw new Error(`Argument expected.`);
+        //       } else {
+        //         this.valStack.push(f(arg));
+        //       }
+        //     }
+        //   } else {
+        //     this.applyOp(op);
+        //   }
+        // }
+        // if (!foundLParen) {
+        //   throw new Error(`Unmatched ")"`);
+        // }
       } else if (t.type === "OP") {
         let topOp = this.opStack.pop();
         if (topOp === undefined) {
@@ -241,7 +241,6 @@ export default class Parser {
           }
         }
       }
-      // this.lastTok = t;
       console.log(
         this.valStack,
         `[${this.opStack.map((x) => x.value).join(", ")}]`
@@ -249,10 +248,44 @@ export default class Parser {
     }
     // Apply all remaining ops.
     console.log("\n\n");
+    // let op: OpTok | LParenTok | IdentTok | undefined;
+    // while ((op = this.opStack.pop())) {
+    //   if (op.type === "LPAREN") {
+    //     throw new Error(`Unmatched "(".`);
+    //   } else if (op.type === "IDENT") {
+    //     let f = funs[op.value];
+    //     if (f === undefined) {
+    //       throw new Error(`Unknown function: ${op.value}`);
+    //     } else {
+    //       let arg = this.valStack.pop();
+    //       if (arg === undefined) {
+    //         throw new Error(`Argument expected.`);
+    //       } else {
+    //         this.valStack.push(f(arg));
+    //       }
+    //     }
+    //   } else {
+    //     this.applyOp(op);
+    //   }
+    //   console.log(this.valStack, this.opStack.map((x) => x.value).join(", "));
+    // }
+    let op = this.popOps();
+    if (op?.type === "LPAREN") {
+      throw new Error(`Unmatched '(': ${JSON.stringify(op)}`);
+    }
+    // Check no values left over.
+    if (this.valStack.length === 1) {
+      return this.valStack[0];
+    } else {
+      throw new Error("Unspecified parsing error!");
+    }
+  }
+
+  popOps(): LParenTok | undefined {
     let op: OpTok | LParenTok | IdentTok | undefined;
     while ((op = this.opStack.pop())) {
       if (op.type === "LPAREN") {
-        throw new Error(`Unmatched "(".`);
+        return op;
       } else if (op.type === "IDENT") {
         let f = funs[op.value];
         if (f === undefined) {
@@ -268,14 +301,9 @@ export default class Parser {
       } else {
         this.applyOp(op);
       }
-      console.log(this.valStack, this.opStack.map((x) => x.value).join(", "));
+      // console.log(this.valStack, this.opStack.map((x) => x.value).join(", "));
     }
-    // Check no values left over.
-    if (this.valStack.length === 1) {
-      return this.valStack[0];
-    } else {
-      throw new Error("Unspecified parsing error!");
-    }
+    return op;
   }
 
   applyOp(op: OpTok): void {
@@ -289,60 +317,6 @@ export default class Parser {
     }
     this.valStack.push(opData[op.value].apply(...args.reverse()));
   }
-
-  // getToken(): Token | undefined {
-  //   if (this.tokStack.length > 0) {
-  //     return this.tokStack.pop();
-  //   }
-  //   this.skipWhitespace();
-  //   let ch = this.src[this.pos];
-  //   if (ch === undefined) {
-  //     return undefined;
-  //   } else if (ch === "(") {
-  //     return lParen(this.pos++);
-  //   } else if (ch === ")") {
-  //     return rParen(this.pos++);
-  //   } else if (ch === "*" || ch === "/" || ch === "^" || ch === "=") {
-  //     return op(this.pos++, ch);
-  //   } else if (ch === "+" || ch === "-") {
-  //     if (
-  //       this.lastTok === undefined ||
-  //       this.lastTok.type === "LPAREN" ||
-  //       this.lastTok.type === "OP"
-  //     ) {
-  //       return op(this.pos++, ch === "+" ? "u+" : "u-");
-  //     } else {
-  //       return op(this.pos++, ch);
-  //     }
-  //   } else if ("0123456789".includes(ch)) {
-  //     let match = NUM_RE.exec(this.src.slice(this.pos));
-  //     if (match === null) {
-  //       throw new Error("This shouldn't have happened!");
-  //     }
-  //     let startPos = this.pos;
-  //     this.pos += match[0].length;
-  //     return num(startPos, this.pos, Number(match[0]));
-  //   } else if (
-  //     (ch.charCodeAt(0) >= 65 && ch.charCodeAt(0) < 91) ||
-  //     (ch.charCodeAt(0) >= 97 && ch.charCodeAt(0) < 123)
-  //   ) {
-  //     let match = IDENT_RE.exec(this.src.slice(this.pos));
-  //     if (match === null) {
-  //       throw new Error("This shouldn't have happened!");
-  //     }
-  //     let startPos = this.pos;
-  //     this.pos += match[0].length;
-  //     return ident(startPos, this.pos, match[0]);
-  //   } else {
-  //     throw new Error(`Uexpected character: ${ch}`);
-  //   }
-  // }
-
-  // skipWhitespace(): void {
-  //   while (this.src[this.pos]?.trim() === "") {
-  //     this.pos++;
-  //   }
-  // }
 }
 
 class TokenStack {
@@ -434,8 +408,8 @@ class TokenStack {
 //   let t = T.pop();
 //   console.log(t);
 // }
-let P = new Parser("2.+0.3*4e2");
-console.log(P.parse());
+// let P = new Parser("2+3*(4+5))");
+// console.log(P.parse());
 // let t: Token | undefined;
 // while ((t = P.getToken())) {
 //   console.log(t);
