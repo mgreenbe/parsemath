@@ -25,6 +25,7 @@ export default class Parser {
     while ((t = this.tokenStack.pop())) {
       switch (t.type) {
         case "NUM":
+        case "IDENT":
           this.valStack.push(t.value);
           break;
         case "FUN":
@@ -129,12 +130,12 @@ export default class Parser {
       case "u+":
       case "u-": {
         let x = this.valStack.pop();
-        if (x === undefined) {
-          throw new Error(`Not enough arguments for ${t.name}.`);
-        } else if (Array.isArray(x)) {
-          throw new Error(`Can't apply ${t.name} to ${x}.`);
-        } else {
+        if (typeof x === "number" || x instanceof Vector) {
           this.valStack.push(opData[t.name].apply(x));
+        } else if (x === undefined) {
+          throw new Error(`Not enough arguments for ${t.name}.`);
+        } else {
+          throw new Error(`Can't apply ${t.name} to ${x}.`);
         }
         break;
       }

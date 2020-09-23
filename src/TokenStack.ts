@@ -1,7 +1,7 @@
 import { Op } from "./BuiltIns";
 import { Vector } from "./Vector";
 
-export type Token = NumTok | FunTok | LParenTok | RParenTok | OpTok;
+export type Token = NumTok | FunTok | IdentTok | LParenTok | RParenTok | OpTok;
 
 export type NumTok = {
   type: "NUM";
@@ -14,6 +14,13 @@ export type FunTok = {
   startPos: number;
   name: string;
   apply: (...args: number[]) => number;
+};
+
+export type IdentTok = {
+  type: "IDENT";
+  startPos: number;
+  name: string;
+  value: number | Vector;
 };
 
 export type LParenTok = {
@@ -51,6 +58,14 @@ const fun = (
   apply: (...args: number[]) => number
 ): Token => {
   return { type: "FUN", startPos, name, apply };
+};
+
+const ident = (
+  startPos: number,
+  name: string,
+  value: number | Vector
+): IdentTok => {
+  return { type: "IDENT", startPos, name, value };
 };
 
 const NUM_RE = /^\d+(?:\.\d*)?(?:[eE][+-]?\d+)?/;
@@ -141,22 +156,22 @@ export default class TokenStack {
       if (!match || !match[1]) {
         throw new Error("This shouldn't have happened!");
       }
-      let ident = match[1];
+      let name = match[1];
       let startPos = this.pos;
-      this.pos += ident.length;
+      this.pos += name.length;
       if (match[2]) {
-        let f = this.funs[ident];
+        let f = this.funs[name];
         if (f === undefined) {
-          throw new Error(`Unknown function '${ident}'`);
+          throw new Error(`Unknown function '${name}'`);
         } else {
-          this.cur = fun(startPos, ident, f);
+          this.cur = fun(startPos, name, f);
         }
       } else {
-        let value = this.vars[ident];
+        let value = this.vars[name];
         if (value !== undefined) {
-          this.cur = num(startPos, value); // can't substitute in tokenizer :(
+          this.cur = ident(startPos, name, value);
         } else {
-          throw new Error(`Unknown variable '${ident}'`);
+          throw new Error(`Unknown variable: '${name}'`);
         }
       }
       return this.cur;

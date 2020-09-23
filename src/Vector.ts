@@ -3,6 +3,14 @@ export class Vector extends Array<number> {
     return x instanceof Vector && Array.isArray(x);
   }
 
+  all(eps = 1e-8): boolean {
+    return this.every((xi) => Math.abs(xi) > eps);
+  }
+
+  any(eps = 1e-8): boolean {
+    return this.some((xi) => Math.abs(xi) > eps);
+  }
+
   plus(y: number | Vector): Vector {
     if (typeof y === "number") {
       return new Vector(...this.map((xi) => xi + y));

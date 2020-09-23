@@ -1,8 +1,9 @@
 import Parser, { builtInFuns } from "./index";
+import { Vector, vec } from "./Vector";
 
 function parse(
   expr: string,
-  scope: Record<string, number> = {},
+  scope: Record<string, number | Vector> = {},
   funs: Record<string, (...args: number[]) => number> = {}
 ) {
   let P = new Parser(expr, scope, funs);
@@ -135,4 +136,72 @@ test("custom function in 3 variables", () => {
   let f = (x: number, y: number, z: number) => x * y + y * z + z * x;
   let expr = "f(x,y,z) = f(z, x, y)";
   expect(parse(expr, { x: 1, y: 2, z: 3 }, { f })).toBe(1);
+});
+
+test("vector addition, subtraction, unary +, -", () => {
+  let e1 = "u+v=w";
+  let e2 = "w-v=u";
+  let e3 = "+-u--w=+v";
+  let u = vec(1, 2, 3);
+  let v = vec(4, 5, 6);
+  let w = vec(5, 7, 9);
+  let a1 = parse(e1, { u, v, w });
+  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  let a2 = parse(e2, { u, v, w });
+  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  let a3 = parse(e3, { u, v, w });
+  expect(a3 instanceof Vector && a3.all()).toBe(true);
+});
+
+test("vector addition, subtraction: broadcasting", () => {
+  let e1 = "u+v=w";
+  let e2 = "w-v=u";
+  let u = vec(1, 2, 3);
+  let v = 4;
+  let w = vec(5, 6, 7);
+  let a1 = parse(e1, { u, v, w });
+  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  let a2 = parse(e2, { u, v, w });
+  expect(a2 instanceof Vector && a2.all()).toBe(true);
+});
+
+test("vector elementwise *, /", () => {
+  let e1 = "u*v=w";
+  let e2 = "w/v=u";
+  let e3 = "w/u=v";
+  let u = vec(1.1, 2.2, 3.3);
+  let v = vec(4e-1, 5e2, 6);
+  let w = u.times(v);
+  let a1 = parse(e1, { u, v, w });
+  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  let a2 = parse(e2, { u, v, w });
+  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  let a3 = parse(e3, { u, v, w });
+  expect(a3 instanceof Vector && a3.all()).toBe(true);
+});
+
+test("vector elementwise +, /: broadcasting", () => {
+  let e1 = "u*v=w";
+  let e2 = "w/v=u";
+  let e3 = "w/u=x";
+  let u = vec(1.1, 2.2, 3.3);
+  let v = 2e-1;
+  let w = vec(0.22, 0.44, 0.66);
+  let x = vec(v, v, v);
+  let a1 = parse(e1, { u, v, w });
+  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  let a2 = parse(e2, { u, v, w });
+  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  let a3 = parse(e3, { u, v, w, x });
+  expect(a3 instanceof Vector && a3.all()).toBe(true);
+});
+
+test("scalar multiplication", () => {
+  let i = vec(1, 0, 0);
+  let j = vec(0, 1, 0);
+  let k = vec(0, 0, 1);
+  let u = vec(1.1, -22e-1, 0.33e1);
+  let expr = "1.1*i - 2.2*j + 3.3*k = u";
+  let a = parse(expr, { i, j, k, u });
+  expect(a instanceof Vector && a.all()).toBe(true);
 });
