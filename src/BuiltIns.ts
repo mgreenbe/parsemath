@@ -1,3 +1,5 @@
+import { Vector, univBinOps, univUnOps } from "./Vector";
+
 export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=" | ",";
 
 export const opData = {
@@ -7,49 +9,49 @@ export const opData = {
     prec: 0,
     fixity: "INFIX",
     assoc: "LTR",
-    apply: (x: number, y: number) => (Math.abs(x - y) < 1e-8 ? 1 : 0),
+    apply: univBinOps["="],
   },
   "+": {
     arity: 2,
     prec: 1,
     fixity: "INFIX",
     assoc: "LTR",
-    apply: (x: number, y: number) => x + y,
+    apply: univBinOps["+"],
   },
   "-": {
     arity: 2,
     prec: 1,
     fixity: "INFIX",
     assoc: "LTR",
-    apply: (x: number, y: number) => x - y,
+    apply: univBinOps["-"],
   },
   "*": {
     arity: 2,
     prec: 2,
     fixity: "INFIX",
     assoc: "LTR",
-    apply: (x: number, y: number) => x * y,
+    apply: univBinOps["*"],
   },
   "/": {
     arity: 2,
     prec: 2,
     fixity: "INFIX",
     assoc: "LTR",
-    apply: (x: number, y: number) => x / y,
+    apply: univBinOps["/"],
   },
   "u+": {
     arity: 1,
     prec: 3,
     fixity: "PREFIX",
     assoc: "RTL",
-    apply: (x: number) => x,
+    apply: univUnOps["+"],
   },
   "u-": {
     arity: 1,
     prec: 3,
     fixity: "PREFIX",
     assoc: "RTL",
-    apply: (x: number) => -x,
+    apply: univUnOps["-"],
   },
   //   "**": { arity: 2, prec: 4, fixity: "INFIX", assoc: "RTL" },
   "^": {
@@ -57,7 +59,7 @@ export const opData = {
     prec: 4,
     fixity: "INFIX",
     assoc: "RTL",
-    apply: (x: number, y: number) => Math.pow(x, y),
+    apply: univBinOps["^"],
   },
   ",": {
     arity: 2,

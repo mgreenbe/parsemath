@@ -1,4 +1,5 @@
-import { Op, opData } from "./BuiltIns";
+import { Op } from "./BuiltIns";
+import { Vector } from "./Vector";
 
 export type Token = NumTok | FunTok | LParenTok | RParenTok | OpTok;
 
@@ -37,6 +38,7 @@ const lParen = (startPos: number): Token => {
 const rParen = (startPos: number): Token => {
   return { type: "RPAREN", startPos };
 };
+
 const op = (startPos: number, op: Op): Token => {
   return { type: "OP", startPos, name: op };
 };
@@ -56,7 +58,7 @@ const IDENT_RE = /^([a-zA-Z]\w*)\s*(\(?)/;
 
 export default class TokenStack {
   src: string;
-  vars: Record<string, number>;
+  vars: Record<string, number | Vector>;
   funs: Record<string, (...args: number[]) => number>;
   pos: number = 0;
   buf: Token[] = [];
@@ -65,7 +67,7 @@ export default class TokenStack {
 
   constructor(
     src: string,
-    vars: Record<string, number>,
+    vars: Record<string, number | Vector>,
     funs: Record<string, (...args: number[]) => number>
   ) {
     this.src = src;
@@ -152,7 +154,7 @@ export default class TokenStack {
       } else {
         let value = this.vars[ident];
         if (value !== undefined) {
-          this.cur = num(startPos, value);
+          this.cur = num(startPos, value); // can't substitute in tokenizer :(
         } else {
           throw new Error(`Unknown variable '${ident}'`);
         }

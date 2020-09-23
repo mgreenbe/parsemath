@@ -1,10 +1,11 @@
 import TokenStack, { Token, OpTok, FunTok, LParenTok } from "./TokenStack";
+import { Vector } from "./Vector";
 import { builtInFuns, opData } from "./BuiltIns";
 
 export { builtInFuns };
 
 type List<T> = T[];
-type Value = number | List<number>;
+type Value = number | Vector | List<number>;
 
 export default class Parser {
   tokenStack: TokenStack;
@@ -13,13 +14,13 @@ export default class Parser {
 
   constructor(
     src: string,
-    vars: Record<string, number> = {},
+    vars: Record<string, number | Vector> = {},
     funs: Record<string, (...args: number[]) => number> = builtInFuns
   ) {
     this.tokenStack = new TokenStack(src, vars, funs);
   }
 
-  parse(): number {
+  parse(): number | Vector {
     let t: Token | undefined;
     while ((t = this.tokenStack.pop())) {
       switch (t.type) {
@@ -85,7 +86,11 @@ export default class Parser {
       throw new Error(`Unmatched '(': ${JSON.stringify(op)}`);
     }
     // Check no values left over.
-    if (this.valStack.length === 1 && typeof this.valStack[0] === "number") {
+    if (
+      this.valStack.length === 1 &&
+      (typeof this.valStack[0] === "number" ||
+        this.valStack[0] instanceof Vector)
+    ) {
       return this.valStack[0];
     } else {
       throw new Error("Unspecified parsing error!");
@@ -113,6 +118,7 @@ export default class Parser {
     }
     if (typeof arg === "number") {
       this.valStack.push(t.apply(arg));
+    } else if (arg instanceof Vector) {
     } else {
       this.valStack.push(t.apply(...arg));
     }
@@ -142,7 +148,10 @@ export default class Parser {
         let x = this.valStack.pop();
         if (x === undefined || y === undefined) {
           throw new Error(`Not enough arguments for ${t.name}.`);
-        } else if (Array.isArray(x) || Array.isArray(y)) {
+        } else if (
+          (Array.isArray(x) && !(x instanceof Vector)) ||
+          (Array.isArray(y) && !(y instanceof Vector))
+        ) {
           throw new Error(`Can't apply ${t.name} to ${x}.`);
         } else {
           this.valStack.push(opData[t.name].apply(x, y));
@@ -162,14 +171,14 @@ export default class Parser {
         break;
       }
       default: {
-        throw new Error(`Unknown operation: '${t.name}'`);
+        throw new Error(`Unknown operation: '${t}'`);
       }
     }
   }
 }
 
-// const x = 3.14;
-// const y = 2.71;
-// const expr = "z";
-// let P = new Parser(expr, { x, y }, {});
-// console.log(P.parse());
+const x = 1;
+const y = new Vector(2, 3, 4);
+const expr = "x+y";
+let P = new Parser(expr, { x, y }, {});
+console.log(P.parse());
