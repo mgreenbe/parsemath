@@ -1,4 +1,4 @@
-import { Op } from "./BuiltIns";
+import { Op, Fun } from "./BuiltIns";
 import { Vector } from "./Vector";
 
 export type Token = NumTok | FunTok | IdentTok | LParenTok | RParenTok | OpTok;
@@ -13,7 +13,7 @@ export type FunTok = {
   type: "FUN";
   startPos: number;
   name: string;
-  apply: (...args: number[]) => number;
+  apply: Fun;
 };
 
 export type IdentTok = {
@@ -52,11 +52,7 @@ const op = (startPos: number, op: Op): Token => {
 const num = (startPos: number, value: number): Token => {
   return { type: "NUM", startPos, value };
 };
-const fun = (
-  startPos: number,
-  name: string,
-  apply: (...args: number[]) => number
-): Token => {
+const fun = (startPos: number, name: string, apply: Fun): Token => {
   return { type: "FUN", startPos, name, apply };
 };
 
@@ -74,7 +70,7 @@ const IDENT_RE = /^([a-zA-Z]\w*)\s*(\(?)/;
 export default class TokenStack {
   src: string;
   vars: Record<string, number | Vector>;
-  funs: Record<string, (...args: number[]) => number>;
+  funs: Record<string, { nargs: number; apply: Fun }>;
   pos: number = 0;
   buf: Token[] = [];
   cur: Token | undefined = undefined;
@@ -83,7 +79,7 @@ export default class TokenStack {
   constructor(
     src: string,
     vars: Record<string, number | Vector>,
-    funs: Record<string, (...args: number[]) => number>
+    funs: Record<string, { nargs: number; apply: Fun }>
   ) {
     this.src = src;
     this.vars = vars;
@@ -164,7 +160,7 @@ export default class TokenStack {
         if (f === undefined) {
           throw new Error(`Unknown function '${name}'`);
         } else {
-          this.cur = fun(startPos, name, f);
+          this.cur = fun(startPos, name, f.apply);
         }
       } else {
         let value = this.vars[name];

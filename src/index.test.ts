@@ -1,10 +1,11 @@
 import Parser, { builtInFuns } from "./index";
+import { Fun, map } from "./BuiltIns";
 import { Vector, vec } from "./Vector";
 
 function parse(
   expr: string,
   scope: Record<string, number | Vector> = {},
-  funs: Record<string, (...args: number[]) => number> = {}
+  funs?: Record<string, { nargs: number; apply: Fun }>
 ) {
   let P = new Parser(expr, scope, funs);
   return P.parse();
@@ -135,7 +136,9 @@ test("atan2", () => {
 test("custom function in 3 variables", () => {
   let f = (x: number, y: number, z: number) => x * y + y * z + z * x;
   let expr = "f(x,y,z) = f(z, x, y)";
-  expect(parse(expr, { x: 1, y: 2, z: 3 }, { f })).toBe(1);
+  expect(
+    parse(expr, { x: 1, y: 2, z: 3 }, { f: { nargs: 3, apply: map(f) } })
+  ).toBe(1);
 });
 
 test("vector addition, subtraction, unary +, -", () => {
@@ -204,4 +207,25 @@ test("scalar multiplication", () => {
   let expr = "1.1*i - 2.2*j + 3.3*k = u";
   let a = parse(expr, { i, j, k, u });
   expect(a instanceof Vector && a.all()).toBe(true);
+});
+
+test("apply universal function to vectors", () => {
+  let x = vec(-1, 2, -3, 4);
+  let xx = vec(1, 2, 3, 4);
+  let y = vec(0, 1, 4, 9);
+  let yy = vec(0, 1, 2, 3);
+  let e1 = "abs(x)=xx";
+  let e2 = "sqrt(y)=yy";
+  let a = parse(e1, { x, xx });
+  expect(a instanceof Vector && a.all()).toBe(true);
+  let b = parse(e2, { y, yy });
+  expect(b instanceof Vector && b.all()).toBe(true);
+});
+
+test("dot product", () => {
+  let x = vec(-1, 2, -3, 4);
+  let y = vec(1, 2, 3, 4);
+  let expr = "dot(x,y)";
+  let a = parse(expr, { x, y });
+  expect(a).toBe(10);
 });
