@@ -229,3 +229,10 @@ test("dot product", () => {
   let a = parse(expr, { x, y });
   expect(a).toBe(10);
 });
+
+test("vector literal", () => {
+  const expr = "[1,2,[3,4,[5,6,7], [8]],[9,  10]]=u";
+  let u = vec(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  let a = parse(expr, { u });
+  expect(a instanceof Vector && a.all()).toBe(true);
+});

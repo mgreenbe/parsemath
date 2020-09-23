@@ -1,38 +1,49 @@
-import { Op, Fun } from "./BuiltIns";
+import { Op, Fun, FunRec } from "./BuiltIns";
 import { Vector } from "./Vector";
 
-export type Token = NumTok | FunTok | IdentTok | LParenTok | RParenTok | OpTok;
+export type Token =
+  | NumTok
+  | FunTok
+  | IdentTok
+  | LParenTok
+  | RParenTok
+  | LBrakTok
+  | RBrakTok
+  | OpTok;
 
 export type NumTok = {
   type: "NUM";
   startPos: number;
   value: number;
 };
-
 export type FunTok = {
   type: "FUN";
   startPos: number;
   name: string;
   apply: Fun;
 };
-
 export type IdentTok = {
   type: "IDENT";
   startPos: number;
   name: string;
   value: number | Vector;
 };
-
 export type LParenTok = {
   type: "LPAREN";
   startPos: number;
 };
-
 export type RParenTok = {
   type: "RPAREN";
   startPos: number;
 };
-
+export type LBrakTok = {
+  type: "LBRAK";
+  startPos: number;
+};
+export type RBrakTok = {
+  type: "RBRAK";
+  startPos: number;
+};
 export type OpTok = {
   type: "OP";
   startPos: number;
@@ -44,6 +55,13 @@ const lParen = (startPos: number): Token => {
 };
 const rParen = (startPos: number): Token => {
   return { type: "RPAREN", startPos };
+};
+
+const lBrak = (startPos: number): Token => {
+  return { type: "LBRAK", startPos };
+};
+const rBrak = (startPos: number): Token => {
+  return { type: "RBRAK", startPos };
 };
 
 const op = (startPos: number, op: Op): Token => {
@@ -70,7 +88,7 @@ const IDENT_RE = /^([a-zA-Z]\w*)\s*(\(?)/;
 export default class TokenStack {
   src: string;
   vars: Record<string, number | Vector>;
-  funs: Record<string, { nargs: number; apply: Fun }>;
+  funs: Record<string, FunRec>;
   pos: number = 0;
   buf: Token[] = [];
   cur: Token | undefined = undefined;
@@ -79,7 +97,7 @@ export default class TokenStack {
   constructor(
     src: string,
     vars: Record<string, number | Vector>,
-    funs: Record<string, { nargs: number; apply: Fun }>
+    funs: Record<string, FunRec>
   ) {
     this.src = src;
     this.vars = vars;
@@ -106,6 +124,9 @@ export default class TokenStack {
     } else if (ch === "(") {
       this.cur = lParen(this.pos++);
       return this.cur;
+    } else if (ch === "[") {
+      this.cur = lBrak(this.pos++);
+      return this.cur;
     } else if (ch === ")") {
       if (!this.last) {
         throw new Error(`Expression starts with ')'`);
@@ -113,6 +134,14 @@ export default class TokenStack {
         throw new Error(`Empty parentheses.`);
       }
       this.cur = rParen(this.pos++);
+      return this.cur;
+    } else if (ch === "]") {
+      if (!this.last) {
+        throw new Error(`Expression starts with ']'`);
+      } else if (this.last.type === "LPAREN") {
+        throw new Error(`Empty brackets.`);
+      }
+      this.cur = rBrak(this.pos++);
       return this.cur;
     } else if (
       ch === "*" ||

@@ -76,7 +76,7 @@ export const opData = {
   },
 };
 
-export let builtInFuns: Record<string, { nargs: number; apply: Fun }> = {
+export let builtInFuns: Record<string, FunRec> = {
   abs: {
     nargs: 1,
     apply: map(Math.abs),
@@ -114,6 +114,7 @@ export let builtInFuns: Record<string, { nargs: number; apply: Fun }> = {
 type MathFun = (...args: number[]) => number;
 
 export type Fun = (...args: (number | Vector)[]) => number | Vector;
+export type FunRec = { nargs: number; apply: Fun };
 
 export function map(f: MathFun): Fun {
   return (...args: (number | Vector)[]) => {
