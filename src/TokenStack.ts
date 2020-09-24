@@ -1,4 +1,4 @@
-import { Op, FunRec } from "./BuiltIns";
+import { Op } from "./Operators";
 import Matrix from "./Matrix";
 
 export type Token =
