@@ -1,4 +1,7 @@
 export class Vector extends Array<number> {
+  constructor(...args: number[]) {
+    super(...args);
+  }
   static isVector(x: unknown): x is Vector {
     return x instanceof Vector && Array.isArray(x);
   }
