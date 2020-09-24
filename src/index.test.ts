@@ -1,15 +1,6 @@
 import { Parser, parse, builtInFuns } from "./index";
 import Matrix from "./Matrix";
 
-// function parse(
-//   expr: string,
-//   scope: Record<string, number | Matrix> = {},
-//   funs?: Record<string, { nargs: number; apply: Fun }>
-// ) {
-//   let P = new Parser(expr, scope, funs);
-//   return P.parse();
-// }
-
 function numDigits(eps: number, a: number, b: number) {
   let n = -Math.log10(0.5 * eps * (Math.abs(a) + Math.abs(b)));
   return n;
