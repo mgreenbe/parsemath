@@ -1,4 +1,4 @@
-import { Op } from "./BuiltIns";
+import { Op } from "./Operators";
 import Matrix from "./Matrix";
 export declare type Token = ValueTok | IdentTok | OpTok | LParenTok | RParenTok | LBrakTok | RBrakTok;
 export declare type ValueTok = {

@@ -6,10 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = exports.Parser = exports.builtInFuns = void 0;
 const TokenStack_1 = __importDefault(require("./TokenStack"));
 const Matrix_1 = __importDefault(require("./Matrix"));
-const BuiltIns_1 = require("./BuiltIns");
-Object.defineProperty(exports, "builtInFuns", { enumerable: true, get: function () { return BuiltIns_1.builtInFuns; } });
+const Functions_1 = require("./Functions");
+Object.defineProperty(exports, "builtInFuns", { enumerable: true, get: function () { return Functions_1.builtInFuns; } });
+const Operators_1 = require("./Operators");
 class Parser {
-    constructor(src, vars = {}, funs = BuiltIns_1.builtInFuns) {
+    constructor(src, vars = {}, funs = Functions_1.builtInFuns) {
         this.valStack = [];
         this.opStack = [];
         this.nesting = [];
@@ -81,8 +82,8 @@ class Parser {
                             this.opStack.push(tt, t);
                         }
                         else {
-                            let { prec: tprec, arity: tarity, assoc: tassoc } = BuiltIns_1.opData[t.name];
-                            let { prec: ttprec, arity: ttarity, assoc: ttassoc } = BuiltIns_1.opData[tt.name];
+                            let { prec: tprec, arity: tarity, assoc: tassoc } = Operators_1.opData[t.name];
+                            let { prec: ttprec, arity: ttarity, assoc: ttassoc } = Operators_1.opData[tt.name];
                             if (tprec > ttprec || (tarity === 1 && ttarity === 2)) {
                                 this.opStack.push(tt, t);
                             }
@@ -183,7 +184,7 @@ class Parser {
                     throw new Error(`Not enough arguments for ${t.name}.`);
                 }
                 else if (x instanceof Matrix_1.default) {
-                    let result = BuiltIns_1.opData[t.name].apply(x);
+                    let result = Operators_1.opData[t.name].apply(x);
                     this.valStack.push(result);
                 }
                 else {
@@ -210,7 +211,7 @@ class Parser {
                         throw new Error(`An argument list shouldn't be here.\n**This shouldn't have happened!**`);
                     }
                     else {
-                        let result = BuiltIns_1.opData[t.name].apply(x, y);
+                        let result = Operators_1.opData[t.name].apply(x, y);
                         this.valStack.push(result);
                     }
                     break;

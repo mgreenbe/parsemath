@@ -1,6 +1,6 @@
 import TokenStack, { IdentTok, OpTok, LParenTok, LBrakTok } from "./TokenStack";
 import Matrix from "./Matrix";
-import { builtInFuns, Fun, FunRec } from "./BuiltIns";
+import { builtInFuns, Fun, FunRec } from "./Functions";
 export { builtInFuns };
 export declare class Parser {
     tokenStack: TokenStack;
