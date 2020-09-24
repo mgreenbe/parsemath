@@ -6,11 +6,11 @@ import TokenStack, {
   LBrakTok,
 } from "./TokenStack";
 import Matrix from "./Matrix";
-import { builtInFuns, opData, FunRec } from "./BuiltIns";
+import { builtInFuns, opData, Fun, FunRec } from "./BuiltIns";
 
 export { builtInFuns };
 
-export default class Parser {
+export class Parser {
   tokenStack: TokenStack;
   valStack: (Matrix | Matrix[])[] = [];
   opStack: (OpTok | LParenTok | LBrakTok | IdentTok)[] = [];
@@ -253,5 +253,18 @@ export default class Parser {
     }
   }
 }
-let P = new Parser("[[[1,2];3,4],[5;5];6,6,6]");
-P.parse().log();
+
+export function parse(
+  expr: string,
+  scope?: Record<string, number | Matrix>,
+  funs?: Record<string, { nargs: number; apply: Fun }>
+) {
+  let P = new Parser(expr, scope, funs);
+  return P.parse();
+}
+
+// parse(
+//   "[sin(pi),cos(pi), pi*0.5]=[1,0,pi/2]",
+//   { pi: Math.PI / 2 },
+//   builtInFuns
+// ).log();

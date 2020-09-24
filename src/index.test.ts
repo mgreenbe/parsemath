@@ -1,15 +1,15 @@
-import Parser, { builtInFuns } from "./index";
-import { Fun } from "./BuiltIns";
+import { Parser, parse, builtInFuns } from "./index";
 import Matrix from "./Matrix";
 
-function parse(
-  expr: string,
-  scope: Record<string, number | Matrix> = {},
-  funs?: Record<string, { nargs: number; apply: Fun }>
-) {
-  let P = new Parser(expr, scope, funs);
-  return P.parse();
-}
+// function parse(
+//   expr: string,
+//   scope: Record<string, number | Matrix> = {},
+//   funs?: Record<string, { nargs: number; apply: Fun }>
+// ) {
+//   let P = new Parser(expr, scope, funs);
+//   return P.parse();
+// }
+
 function numDigits(eps: number, a: number, b: number) {
   let n = -Math.log10(0.5 * eps * (Math.abs(a) + Math.abs(b)));
   return n;
@@ -255,5 +255,14 @@ test("vector literal", () => {
 test("block matrix", () => {
   let x = Matrix.create(3, 3, [1, 2, 5, 3, 4, 5, 6, 6, 6]);
   let P = new Parser("[[[1,2];3,4],[5;5];6,6,6]=x", { x });
+  expect(P.parse().all()).toBe(true);
+});
+
+test("substitution in matrices", () => {
+  let P = new Parser(
+    "[sin(pi)  ,cos(pi), pi * 0.5]=[1,0,pi/2]",
+    { pi: Math.PI / 2 },
+    builtInFuns
+  );
   expect(P.parse().all()).toBe(true);
 });

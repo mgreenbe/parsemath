@@ -101,6 +101,14 @@ export let builtInFuns: Record<string, FunRec> = {
     nargs: 1,
     apply: Matrix.lift(Math.max),
   },
+  cos: {
+    nargs: 1,
+    apply: Matrix.lift(Math.cos),
+  },
+  sin: {
+    nargs: 1,
+    apply: Matrix.lift(Math.sin),
+  },
   atan: {
     nargs: 1,
     apply: Matrix.lift(Math.atan),
