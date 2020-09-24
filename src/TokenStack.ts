@@ -120,7 +120,8 @@ export default class TokenStack {
       ch === "/" ||
       ch === "^" ||
       ch === "=" ||
-      ch === ","
+      ch === "," ||
+      ch === ";"
     ) {
       this.cur = op(this.pos++, ch);
       return this.cur;

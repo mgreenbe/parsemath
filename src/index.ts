@@ -217,7 +217,8 @@ export default class Parser {
       case "/":
       case "^":
       case "=":
-      case ",": {
+      case ",":
+      case ";": {
         let y = this.valStack.pop();
         let x = this.valStack.pop();
         if (
@@ -252,3 +253,5 @@ export default class Parser {
     }
   }
 }
+let P = new Parser("[[[1,2];3,4],[5;5];6,6,6]");
+P.parse().log();

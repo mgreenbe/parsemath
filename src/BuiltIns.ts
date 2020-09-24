@@ -1,6 +1,6 @@
 import Matrix from "./Matrix";
 
-export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=" | ",";
+export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=" | "," | ";";
 
 interface OpRec {
   apply: (...Xs: Matrix[]) => Matrix;
@@ -73,7 +73,7 @@ export const opData: Record<string, OpRec> = {
   },
   ";": {
     arity: 2,
-    prec: 0,
+    prec: -1,
     fixity: "INFIX",
     assoc: "LTR",
     apply: Matrix.vJoin,

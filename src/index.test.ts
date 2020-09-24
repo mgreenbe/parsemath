@@ -251,3 +251,9 @@ test("vector literal", () => {
   let a = parse(expr, { u });
   expect(a.all()).toBe(true);
 });
+
+test("block matrix", () => {
+  let x = Matrix.create(3, 3, [1, 2, 5, 3, 4, 5, 6, 6, 6]);
+  let P = new Parser("[[[1,2];3,4],[5;5];6,6,6]=x", { x });
+  expect(P.parse().all()).toBe(true);
+});
