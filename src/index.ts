@@ -1,53 +1,69 @@
 import TokenStack, {
   Token,
+  IdentTok,
   OpTok,
-  FunTok,
   LParenTok,
   LBrakTok,
 } from "./TokenStack";
-import { Vector, vec } from "./Vector";
+import Matrix from "./Matrix";
 import { builtInFuns, opData, FunRec } from "./BuiltIns";
 
 export { builtInFuns };
 
-type Value = { type: "VALUE"; value: number | Vector };
-type ValueList = { type: "LIST"; list: (number | Vector)[] };
-
 export default class Parser {
   tokenStack: TokenStack;
-  valStack: (Value | ValueList)[] = [];
-  opStack: (OpTok | LParenTok | LBrakTok | FunTok)[] = [];
+  valStack: (Matrix | Matrix[])[] = [];
+  opStack: (OpTok | LParenTok | LBrakTok | IdentTok)[] = [];
+  vars: Record<string, Matrix>;
   funs: Record<string, FunRec>;
   nesting: ("GROUP" | "ARGLIST" | "VECTOR")[] = [];
 
   constructor(
     src: string,
-    vars: Record<string, number | Vector> = {},
+    vars: Record<string, Matrix> = {},
     funs: Record<string, FunRec> = builtInFuns
   ) {
-    this.tokenStack = new TokenStack(src, vars, funs);
+    this.tokenStack = new TokenStack(src);
+    this.vars = vars;
     this.funs = funs;
   }
 
-  parse(): number | Vector {
+  parse(): Matrix {
     let t: Token | undefined;
     while ((t = this.tokenStack.pop())) {
       switch (t.type) {
-        case "NUM":
-        case "IDENT":
-          this.valStack.push({ type: "VALUE", value: t.value });
+        case "VALUE":
+          this.valStack.push(t.value);
           break;
-        case "FUN":
-          this.opStack.push(t);
-          t = this.tokenStack.pop();
-          if (t === undefined) {
-            throw new Error(`Unexpected end of input. Expected '('.`);
-          } else if (t.type === "LPAREN") {
-            this.opStack.push(t);
-            this.nesting.push("ARGLIST");
-          } else {
-            throw new Error(`Expected '('.`);
+        case "IDENT":
+          {
+            let value = this.vars[t.name];
+            if (value !== undefined) {
+              this.valStack.push(value);
+            } else {
+              if (this.funs[t.name] === undefined) {
+                throw new Error(
+                  `Unknown identifier ${t.name} at position ${t.startPos}`
+                );
+              }
+              let tt = this.tokenStack.pop();
+              if (tt === undefined) {
+                throw new Error(
+                  `Unexpected end of input at position ${
+                    t.startPos + t.name.length
+                  }`
+                );
+              } else if (tt.type !== "LPAREN") {
+                throw new Error(
+                  `Expected '(' at position ${t.startPos + t.name.length}`
+                );
+              }
+              this.opStack.push(t);
+              this.opStack.push(tt);
+              this.nesting.push("ARGLIST");
+            }
           }
+
           break;
         case "LPAREN":
           this.opStack.push(t);
@@ -71,7 +87,7 @@ export default class Parser {
             let tt = this.opStack.pop();
             if (tt === undefined) {
               this.opStack.push(t);
-            } else if (tt.type === "FUN") {
+            } else if (tt.type === "IDENT") {
               this.tokenStack.push(t);
               this.applyFun(tt);
             } else if (tt.type === "LPAREN" || tt.type === "LBRAK") {
@@ -117,19 +133,19 @@ export default class Parser {
       throw new Error(`nesting = ${this.nesting}`);
     }
     // Check no values left over.
-    if (this.valStack.length === 1 && this.valStack[0].type === "VALUE") {
-      return this.valStack[0].value;
+    if (this.valStack.length === 1 && this.valStack[0] instanceof Matrix) {
+      return this.valStack[0];
     } else {
       throw new Error("Unspecified parsing error!");
     }
   }
 
   popOps(): LParenTok | LBrakTok | undefined {
-    let op: OpTok | LParenTok | LBrakTok | FunTok | undefined;
+    let op: OpTok | LParenTok | LBrakTok | IdentTok | undefined;
     while ((op = this.opStack.pop())) {
       if (op.type === "LPAREN" || op.type === "LBRAK") {
         return op;
-      } else if (op.type === "FUN") {
+      } else if (op.type === "IDENT") {
         this.applyFun(op);
       } else {
         this.applyOp(op);
@@ -138,13 +154,15 @@ export default class Parser {
     return op;
   }
 
-  applyFun(t: FunTok): void {
+  applyFun(t: IdentTok): void {
     let f = this.funs[t.name];
     if (f === undefined) {
-      throw new Error(`Unknown function: ${t.name}`);
+      throw new Error(
+        `Unknown function: ${t.name}\n**This shouldn't happen!**`
+      );
     }
     let arg = this.valStack.pop();
-    let result: number | Vector;
+    let result: Matrix;
     if (arg === undefined) {
       if (f.nargs === 0) {
         result = f.apply();
@@ -153,24 +171,24 @@ export default class Parser {
           `The function ${t.name} takes ${f.nargs} arguments. You provided 0.`
         );
       }
-    } else if (arg.type === "VALUE") {
+    } else if (arg instanceof Matrix) {
       if (f.nargs === 1) {
-        result = f.apply(arg.value);
+        result = f.apply(arg);
       } else {
         throw new Error(
           `The function ${t.name} takes ${f.nargs} arguments. You provided 1.`
         );
       }
     } else {
-      if (f.nargs === arg.list.length) {
-        result = f.apply(...arg.list);
+      if (f.nargs === arg.length) {
+        result = f.apply(...arg);
       } else {
         throw new Error(
-          `The function ${t.name} takes ${f.nargs} arguments. You provided ${arg.list.length}.`
+          `The function ${t.name} takes ${f.nargs} arguments. You provided ${arg.length}.`
         );
       }
     }
-    this.valStack.push({ type: "VALUE", value: result });
+    this.valStack.push(result);
   }
 
   applyOp(t: OpTok): void {
@@ -180,9 +198,9 @@ export default class Parser {
         let x = this.valStack.pop();
         if (x === undefined) {
           throw new Error(`Not enough arguments for ${t.name}.`);
-        } else if (x.type === "VALUE") {
-          let result = opData[t.name].apply(x.value);
-          this.valStack.push({ type: "VALUE", value: result });
+        } else if (x instanceof Matrix) {
+          let result = opData[t.name].apply(x);
+          this.valStack.push(result);
         } else {
           throw new Error(`Can't apply ${t.name} to ${x}.`);
         }
@@ -193,79 +211,33 @@ export default class Parser {
       case "*":
       case "/":
       case "^":
-      case "=": {
+      case "=":
+      case ",": {
         let y = this.valStack.pop();
         let x = this.valStack.pop();
-        if (x === undefined || y === undefined) {
-          throw new Error(`Not enough arguments for ${t.name}.`);
-        } else if (x.type === "LIST" || y.type === "LIST") {
-          throw new Error(`Can't apply ${t.name} to ${x}.`);
-        } else {
-          let result = opData[t.name].apply(x.value, y.value);
-          this.valStack.push({ type: "VALUE", value: result });
-        }
-        break;
-      }
-      case ",": {
-        let mode = this.nesting[this.nesting.length - 1];
-        if (mode === "ARGLIST") {
-          let y = this.valStack.pop();
-          let x = this.valStack.pop();
-          let list: ValueList;
+        if (
+          t.name !== "," ||
+          this.nesting[this.nesting.length - 1] === "VECTOR"
+        ) {
           if (x === undefined || y === undefined) {
             throw new Error(`Not enough arguments for ${t.name}.`);
-          } else if (x.type === "VALUE") {
-            if (y.type === "VALUE") {
-              this.valStack.push({ type: "LIST", list: [x.value, y.value] });
-            } else {
-              this.valStack.push({ type: "LIST", list: [x.value, ...y.list] });
-            }
+          } else if (Array.isArray(x) || Array.isArray(y)) {
+            throw new Error(
+              `An argument list shouldn't be here.\n**This shouldn't have happened!**`
+            );
           } else {
-            if (y.type === "VALUE") {
-              this.valStack.push({ type: "LIST", list: [...x.list, y.value] });
-            } else {
-              this.valStack.push({
-                type: "LIST",
-                list: [...x.list, ...y.list],
-              });
-            }
+            let result = opData[t.name].apply(x, y);
+            this.valStack.push(result);
           }
-        } else if (mode === "VECTOR") {
-          let y = this.valStack.pop();
-          let x = this.valStack.pop();
-          let list: ValueList;
+          break;
+        } else {
           if (x === undefined || y === undefined) {
             throw new Error(`Not enough arguments for ${t.name}.`);
-          } else if (x.type === "LIST" || y.type === "LIST") {
-            throw new Error(`An arglist can't be a matrix entry`);
-          }
-          if (typeof x.value === "number") {
-            if (typeof y.value === "number") {
-              this.valStack.push({
-                type: "VALUE",
-                value: new Vector(x.value, y.value),
-              });
-            } else {
-              this.valStack.push({
-                type: "VALUE",
-                value: new Vector(x.value, ...y.value),
-              });
-            }
           } else {
-            if (typeof y.value === "number") {
-              this.valStack.push({
-                type: "VALUE",
-                value: new Vector(...x.value, y.value),
-              });
-            } else {
-              this.valStack.push({
-                type: "VALUE",
-                value: new Vector(...x.value, ...y.value),
-              });
-            }
+            let xx = x instanceof Matrix ? [x] : x;
+            let yy = y instanceof Matrix ? [y] : y;
+            this.valStack.push([...xx, ...yy]);
           }
-        } else {
-          throw new Error(`Unexpected ','.`);
         }
         break;
       }
@@ -275,6 +247,10 @@ export default class Parser {
     }
   }
 }
+
+let e = "[[1]] + [[3],[4]]=[4,5]";
+let P = new Parser(e);
+console.log(P.parse().all());
 
 // const expr1 = "[1,2,[3,4,[5,6,7], [8]],[9,  10]]";
 // let P = new Parser(expr1);

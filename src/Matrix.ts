@@ -42,7 +42,7 @@ export default class Matrix {
       }
       let m = Array.from(ms)[0] ?? 1;
 
-      let ns = new Set(Xs.map((X) => X.m));
+      let ns = new Set(Xs.map((X) => X.n));
       ns.delete(1);
       if (ns.size > 1) {
         throw new Error("Incompatible matrix dimensions.");
@@ -72,6 +72,20 @@ export default class Matrix {
 
   map(f: (x: number) => number) {
     return new Matrix(this.m, this.n, this.entries.map(f));
+  }
+
+  all(): boolean {
+    return this.entries.every((x) => Math.abs(x) > 1e-8);
+  }
+
+  static equals(X: Matrix, Y: Matrix) {
+    return Matrix.lift((x: number, y: number) =>
+      Math.abs(x - y) < 1e-8 ? 1 : 0
+    )(X, Y);
+  }
+
+  equals(Y: Matrix) {
+    return Matrix.equals(this, Y);
   }
 
   static plus(...Xs: Matrix[]) {
@@ -170,10 +184,11 @@ export default class Matrix {
   }
 
   log() {
-    console.log(this.toString(), "\n");
+    console.log(this.toString());
   }
 }
 
-let a = Matrix.create(3, 3, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
-let b = Matrix.create(2, 3, [1, 2, 3, 4, 5, 6]);
-a.transpose().hJoin(b.transpose()).transpose().log();
+// let a = Matrix.create(1, 2, [1, 2]);
+// let b = Matrix.create(1, 2, [3, 4]);
+// Matrix.plus(a, b).log();
+// // a.plus(b).log();
