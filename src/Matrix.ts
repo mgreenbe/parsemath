@@ -1,8 +1,8 @@
 export default class Matrix {
-  entries: Float32Array;
+  entries: Float64Array;
   m: number;
   n: number;
-  private constructor(m: number, n: number, entries?: number[] | Float32Array) {
+  private constructor(m: number, n: number, entries?: number[] | Float64Array) {
     if (!Number.isInteger(m) || !Number.isInteger(n)) {
       throw new TypeError("Matrix dimensions must be integers.");
     }
@@ -11,18 +11,26 @@ export default class Matrix {
     }
 
     if (entries === undefined) {
-      this.entries = new Float32Array(m * n);
-    } else if (entries instanceof Float32Array) {
+      this.entries = new Float64Array(m * n);
+    } else if (entries instanceof Float64Array) {
       this.entries = entries;
     } else {
-      this.entries = Float32Array.from(entries);
+      this.entries = Float64Array.from(entries);
     }
     this.m = m;
     this.n = n;
   }
 
-  static create(m: number, n: number, entries?: number[] | Float32Array) {
+  static create(m: number, n: number, entries?: number[] | Float64Array) {
     return new Matrix(m, n, entries);
+  }
+
+  static row(...xs: number[]) {
+    return new Matrix(1, xs.length, xs);
+  }
+
+  static col(...xs: number[]) {
+    return new Matrix(xs.length, 1, xs);
   }
 
   static zero(m: number, n: number) {
@@ -31,6 +39,14 @@ export default class Matrix {
 
   static fromNumber(x: number) {
     return new Matrix(1, 1, [x]);
+  }
+
+  item(): number {
+    if (this.m === 1 && this.n === 1) {
+      return this.entries[0];
+    } else {
+      throw Error("Not a 1-by-1 matrix.");
+    }
   }
 
   static lift(f: (...xs: number[]) => number): (...Xs: Matrix[]) => Matrix {
@@ -49,7 +65,7 @@ export default class Matrix {
       }
       let n = Array.from(ns)[0] ?? 1;
 
-      let Y = new Float32Array(m * n);
+      let Y = new Float64Array(m * n);
       for (let i = 0; i < m; i++) {
         for (let j = 0; j < n; j++) {
           let xs = Xs.map((X) => {
@@ -76,6 +92,16 @@ export default class Matrix {
 
   all(): boolean {
     return this.entries.every((x) => Math.abs(x) > 1e-8);
+  }
+
+  static dot(X: Matrix, Y: Matrix) {
+    if (X.isVector() && Y.isVector() && X.entries.length === Y.entries.length) {
+      return Matrix.fromNumber(
+        X.entries.reduce((s, xi, i) => s + xi * Y.entries[i], 0)
+      );
+    } else {
+      throw new Error("Dot product not implemented for matrices.");
+    }
   }
 
   static equals(X: Matrix, Y: Matrix) {
@@ -137,7 +163,7 @@ export default class Matrix {
   }
 
   static transpose(X: Matrix) {
-    let entries = new Float32Array(X.m * X.n);
+    let entries = new Float64Array(X.m * X.n);
     for (let j = 0; j < X.n; j++) {
       for (let i = 0; i < X.m; i++) {
         entries[j * X.m + i] = X.entries[i * X.n + j];
@@ -171,6 +197,14 @@ export default class Matrix {
     return Matrix.hJoin(this, Y);
   }
 
+  isVector() {
+    return this.m === 1 || this.n === 1;
+  }
+
+  isNumber() {
+    return this.m === 1 && this.n === 1;
+  }
+
   toString() {
     let rows = [];
     for (let i = 0; i < this.m; i++) {
@@ -187,8 +221,3 @@ export default class Matrix {
     console.log(this.toString());
   }
 }
-
-// let a = Matrix.create(1, 2, [1, 2]);
-// let b = Matrix.create(1, 2, [3, 4]);
-// Matrix.plus(a, b).log();
-// // a.plus(b).log();

@@ -1,20 +1,23 @@
 import Parser, { builtInFuns } from "./index";
-import { Fun, map } from "./BuiltIns";
-import { Vector, vec } from "./Vector";
+import { Fun } from "./BuiltIns";
+import Matrix from "./Matrix";
 
 function parse(
   expr: string,
-  scope: Record<string, number | Vector> = {},
+  scope: Record<string, number | Matrix> = {},
   funs?: Record<string, { nargs: number; apply: Fun }>
 ) {
   let P = new Parser(expr, scope, funs);
   return P.parse();
 }
-
+function numDigits(eps: number, a: number, b: number) {
+  let n = -Math.log10(0.5 * eps * (Math.abs(a) + Math.abs(b)));
+  return n;
+}
 test("function application", () => {
   const expr = "sqrt(4)";
   let P = new Parser(expr);
-  expect(P.parse()).toBe(2);
+  expect(P.parse().item()).toBe(2);
 });
 
 const exprs = [
@@ -33,48 +36,56 @@ const exprs = [
 
 for (const expr of exprs) {
   test(expr, () => {
-    expect(parse(expr)).toBe(eval(expr.replace(/\^/g, "**")));
+    let a = parse(expr).item();
+    let b = eval(expr.replace(/\^/g, "**"));
+    expect(a).toBeCloseTo(b, numDigits(1e-12, a, b));
   });
 }
 
 test("-2^-3^-2", () => {
   const expr = "-2^-3^-2";
-  expect(parse(expr)).toBe(-Math.pow(2, -Math.pow(3, -2)));
+  let a = parse(expr).item();
+  let b = -Math.pow(2, -Math.pow(3, -2));
+  expect(a).toBeCloseTo(b, numDigits(1e-12, a, b));
 });
 
 test("x+1", () => {
   const expr = "x+1";
-  expect(parse(expr, { x: 666 })).toBe(667);
+  expect(parse(expr, { x: 666 }).item()).toBe(667);
 });
 
 test("-2*x^(11.1e-1*x)", () => {
   const x = 3;
   const expr = "-2*x^(11.1e-1*x)";
-  expect(parse(expr, { x })).toBe(eval(expr.replace(/\^/g, "**")));
+  let a = parse(expr, { x }).item();
+  let b = eval(expr.replace(/\^/g, "**"));
+  expect(a).toBeCloseTo(b, numDigits(1e-12, a, b));
 });
 
 test("x^2.1 + x/(0.1e1*y   +  1) + y^-0.2e1", () => {
   const x = 3;
   const y = 4;
   const expr = "x^2.1 + x/(0.1e1*y   +  1) + y^-0.2e1";
-  expect(parse(expr, { x, y })).toBe(eval(expr.replace(/\^/g, "**")));
+  let a = parse(expr, { x, y }).item();
+  let b = eval(expr.replace(/\^/g, "**"));
+  expect(a).toBeCloseTo(b, numDigits(1e-12, a, b));
 });
 
 test("2+2=5", () => {
   const expr = "2+2=5";
-  expect(parse(expr)).toBe(0);
+  expect(parse(expr).item()).toBe(0);
 });
 
 test("2+2=4", () => {
   const expr = "2+2=4";
-  expect(parse(expr)).toBe(1);
+  expect(parse(expr).item()).toBe(1);
 });
 
 test("x^2 - y^2 = (x - y)*(x + y)", () => {
   const x = 3.14;
   const y = 2.71;
   const expr = "x^2 - y^2 = (x - y)*(x + y)";
-  expect(parse(expr, { x, y })).toBe(1);
+  expect(parse(expr, { x, y }).item()).toBe(1);
 });
 
 test("Euler's four square identity", () => {
@@ -93,7 +104,7 @@ test("Euler's four square identity", () => {
              (a1 * b3 - a2 * b4 + a3 * b1 + a4 * b2)^2 +
              (a1 * b4 + a2 * b3 - a3 * b2 + a4 * b1)^2`;
   const expr = `${lhs}=${rhs}`;
-  expect(parse(expr, { a1, a2, a3, a4, b1, b2, b3, b4 })).toBe(1);
+  expect(parse(expr, { a1, a2, a3, a4, b1, b2, b3, b4 }).item()).toBe(1);
 });
 
 test("sqrt(a*b) equals sqrt(a)*sqrt(b)", () => {
@@ -101,7 +112,7 @@ test("sqrt(a*b) equals sqrt(a)*sqrt(b)", () => {
   const y = 2.71;
   const expr = "sqrt(x*y) = sqrt(x)*sqrt(y)";
   let funs = { sqrt: builtInFuns.sqrt };
-  expect(parse(expr, { x, y }, funs)).toBe(1);
+  expect(parse(expr, { x, y }, funs).item()).toBe(1);
 });
 
 test("Difference of squares of square roots", () => {
@@ -109,7 +120,7 @@ test("Difference of squares of square roots", () => {
   const y = 2.71;
   const expr = "(sqrt(abs(-x)) + sqrt(y))*(sqrt(x) - sqrt(y)) = x - abs(-y)";
   let funs = { sqrt: builtInFuns.sqrt, abs: builtInFuns.abs };
-  expect(parse(expr, { x, y }, funs)).toBe(1);
+  expect(parse(expr, { x, y }, funs).item()).toBe(1);
 });
 
 test("exponentials", () => {
@@ -118,26 +129,30 @@ test("exponentials", () => {
   const expr1 = "exp(x+y) = exp(x)*exp(y)";
   const expr2 = "exp(x)^-2 = 1/exp(2*x)";
   let funs = { exp: builtInFuns.exp };
-  expect(parse(expr1, { x, y }, funs)).toBe(1);
-  expect(parse(expr2, { x, y }, funs)).toBe(1);
+  expect(parse(expr1, { x, y }, funs).item()).toBe(1);
+  expect(parse(expr2, { x, y }, funs).item()).toBe(1);
 });
 
 test("atan2", () => {
   const expr1 = "atan2(exp(0),sqrt(1))";
-  expect(parse(expr1, {}, builtInFuns)).toBe(Math.PI / 4);
+  expect(parse(expr1, {}, builtInFuns).item()).toBe(Math.PI / 4);
   const x = 3.14;
   const y = 2.71;
   const expr2 = "atan2(y, x) = atan(y/x)";
-  expect(parse(expr2, { x, y }, builtInFuns)).toBe(1);
+  expect(parse(expr2, { x, y }, builtInFuns).item()).toBe(1);
   const expr3 = "atan2(y,x)=2*atan( y/(sqrt(x^2+y^2)+x) )";
-  expect(parse(expr3, { x, y }, builtInFuns)).toBe(1);
+  expect(parse(expr3, { x, y }, builtInFuns).item()).toBe(1);
 });
 
 test("custom function in 3 variables", () => {
   let f = (x: number, y: number, z: number) => x * y + y * z + z * x;
   let expr = "f(x,y,z) = f(z, x, y)";
   expect(
-    parse(expr, { x: 1, y: 2, z: 3 }, { f: { nargs: 3, apply: map(f) } })
+    parse(
+      expr,
+      { x: 1, y: 2, z: 3 },
+      { f: { nargs: 3, apply: Matrix.lift(f) } }
+    ).item()
   ).toBe(1);
 });
 
@@ -145,94 +160,94 @@ test("vector addition, subtraction, unary +, -", () => {
   let e1 = "u+v=w";
   let e2 = "w-v=u";
   let e3 = "+-u--w=+v";
-  let u = vec(1, 2, 3);
-  let v = vec(4, 5, 6);
-  let w = vec(5, 7, 9);
+  let u = Matrix.row(1, 2, 3);
+  let v = Matrix.row(4, 5, 6);
+  let w = Matrix.row(5, 7, 9);
   let a1 = parse(e1, { u, v, w });
-  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  expect(a1.all()).toBe(true);
   let a2 = parse(e2, { u, v, w });
-  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  expect(a2.all()).toBe(true);
   let a3 = parse(e3, { u, v, w });
-  expect(a3 instanceof Vector && a3.all()).toBe(true);
+  expect(a3.all()).toBe(true);
 });
 
 test("vector addition, subtraction: broadcasting", () => {
   let e1 = "u+v=w";
   let e2 = "w-v=u";
-  let u = vec(1, 2, 3);
+  let u = Matrix.col(1, 2, 3);
   let v = 4;
-  let w = vec(5, 6, 7);
+  let w = Matrix.col(5, 6, 7);
   let a1 = parse(e1, { u, v, w });
-  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  expect(a1.all()).toBe(true);
   let a2 = parse(e2, { u, v, w });
-  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  expect(a2.all()).toBe(true);
 });
 
 test("vector elementwise *, /", () => {
   let e1 = "u*v=w";
   let e2 = "w/v=u";
   let e3 = "w/u=v";
-  let u = vec(1.1, 2.2, 3.3);
-  let v = vec(4e-1, 5e2, 6);
+  let u = Matrix.row(1.1, 2.2, 3.3);
+  let v = Matrix.row(4e-1, 5e2, 6);
   let w = u.times(v);
   let a1 = parse(e1, { u, v, w });
-  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  expect(a1.all()).toBe(true);
   let a2 = parse(e2, { u, v, w });
-  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  expect(a2.all()).toBe(true);
   let a3 = parse(e3, { u, v, w });
-  expect(a3 instanceof Vector && a3.all()).toBe(true);
+  expect(a3.all()).toBe(true);
 });
 
 test("vector elementwise +, /: broadcasting", () => {
   let e1 = "u*v=w";
   let e2 = "w/v=u";
   let e3 = "w/u=x";
-  let u = vec(1.1, 2.2, 3.3);
+  let u = Matrix.col(1.1, 2.2, 3.3);
   let v = 2e-1;
-  let w = vec(0.22, 0.44, 0.66);
-  let x = vec(v, v, v);
+  let w = Matrix.col(0.22, 0.44, 0.66);
+  let x = Matrix.col(v, v, v);
   let a1 = parse(e1, { u, v, w });
-  expect(a1 instanceof Vector && a1.all()).toBe(true);
+  expect(a1.all()).toBe(true);
   let a2 = parse(e2, { u, v, w });
-  expect(a2 instanceof Vector && a2.all()).toBe(true);
+  expect(a2.all()).toBe(true);
   let a3 = parse(e3, { u, v, w, x });
-  expect(a3 instanceof Vector && a3.all()).toBe(true);
+  expect(a3.all()).toBe(true);
 });
 
 test("scalar multiplication", () => {
-  let i = vec(1, 0, 0);
-  let j = vec(0, 1, 0);
-  let k = vec(0, 0, 1);
-  let u = vec(1.1, -22e-1, 0.33e1);
+  let i = Matrix.row(1, 0, 0);
+  let j = Matrix.row(0, 1, 0);
+  let k = Matrix.row(0, 0, 1);
+  let u = Matrix.row(1.1, -22e-1, 0.33e1);
   let expr = "1.1*i - 2.2*j + 3.3*k = u";
   let a = parse(expr, { i, j, k, u });
-  expect(a instanceof Vector && a.all()).toBe(true);
+  expect(a.all()).toBe(true);
 });
 
 test("apply universal function to vectors", () => {
-  let x = vec(-1, 2, -3, 4);
-  let xx = vec(1, 2, 3, 4);
-  let y = vec(0, 1, 4, 9);
-  let yy = vec(0, 1, 2, 3);
+  let x = Matrix.col(-1, 2, -3, 4);
+  let xx = Matrix.col(1, 2, 3, 4);
+  let y = Matrix.col(0, 1, 4, 9);
+  let yy = Matrix.col(0, 1, 2, 3);
   let e1 = "abs(x)=xx";
   let e2 = "sqrt(y)=yy";
   let a = parse(e1, { x, xx });
-  expect(a instanceof Vector && a.all()).toBe(true);
+  expect(a.all()).toBe(true);
   let b = parse(e2, { y, yy });
-  expect(b instanceof Vector && b.all()).toBe(true);
+  expect(b.all()).toBe(true);
 });
 
 test("dot product", () => {
-  let x = vec(-1, 2, -3, 4);
-  let y = vec(1, 2, 3, 4);
+  let x = Matrix.row(-1, 2, -3, 4);
+  let y = Matrix.row(1, 2, 3, 4);
   let expr = "dot(x,y)";
-  let a = parse(expr, { x, y });
+  let a = parse(expr, { x, y }).item();
   expect(a).toBe(10);
 });
 
 test("vector literal", () => {
   const expr = "[1,2,[3,4,[5,6,7], [8]],[9,  10]]=u";
-  let u = vec(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  let u = Matrix.row(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
   let a = parse(expr, { u });
-  expect(a instanceof Vector && a.all()).toBe(true);
+  expect(a.all()).toBe(true);
 });

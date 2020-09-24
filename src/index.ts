@@ -20,11 +20,16 @@ export default class Parser {
 
   constructor(
     src: string,
-    vars: Record<string, Matrix> = {},
+    vars: Record<string, number | Matrix> = {},
     funs: Record<string, FunRec> = builtInFuns
   ) {
     this.tokenStack = new TokenStack(src);
-    this.vars = vars;
+    this.vars = Object.fromEntries(
+      Object.entries(vars).map(([key, value]): [string, Matrix] => [
+        key,
+        typeof value === "number" ? Matrix.fromNumber(value) : value,
+      ])
+    );
     this.funs = funs;
   }
 
@@ -247,18 +252,3 @@ export default class Parser {
     }
   }
 }
-
-let e = "[[1]] + [[3],[4]]=[4,5]";
-let P = new Parser(e);
-console.log(P.parse().all());
-
-// const expr1 = "[1,2,[3,4,[5,6,7], [8]],[9,  10]]";
-// let P = new Parser(expr1);
-// console.log(P.parse());
-// expect(parse(expr1, {}, builtInFuns)).toBe(Math.PI / 4);
-// const x = 3.14;
-// const y = 2.71;
-// const expr2 = "atan2(y, x) = atan(y/x)";
-// expect(parse(expr2, { x, y }, builtInFuns)).toBe(1);
-// const expr3 = "atan2(y,x)=2*atan( y/(sqrt(x^2+y^2)+x) )";
-// expect(parse(expr3, { x, y }, builtInFuns)).toBe(1);
