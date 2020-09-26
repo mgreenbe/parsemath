@@ -1,4 +1,4 @@
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 export declare type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=" | "," | ";";
 interface OpRec {
     apply: (...Xs: Matrix[]) => Matrix;

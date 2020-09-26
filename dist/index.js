@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = exports.Parser = exports.builtInFuns = void 0;
 const TokenStack_1 = __importDefault(require("./TokenStack"));
-const Matrix_1 = __importDefault(require("./Matrix"));
+const mattrix_1 = __importDefault(require("mattrix"));
 const Functions_1 = require("./Functions");
 Object.defineProperty(exports, "builtInFuns", { enumerable: true, get: function () { return Functions_1.builtInFuns; } });
 const Operators_1 = require("./Operators");
@@ -17,7 +17,7 @@ class Parser {
         this.tokenStack = new TokenStack_1.default(src);
         this.vars = Object.fromEntries(Object.entries(vars).map(([key, value]) => [
             key,
-            typeof value === "number" ? Matrix_1.default.fromNumber(value) : value,
+            typeof value === "number" ? mattrix_1.default.fromNumber(value) : value,
         ]));
         this.funs = funs;
     }
@@ -120,7 +120,7 @@ class Parser {
             throw new Error(`nesting = ${this.nesting}`);
         }
         // Check no values left over.
-        if (this.valStack.length === 1 && this.valStack[0] instanceof Matrix_1.default) {
+        if (this.valStack.length === 1 && this.valStack[0] instanceof mattrix_1.default) {
             return this.valStack[0];
         }
         else {
@@ -157,7 +157,7 @@ class Parser {
                 throw new Error(`The function ${t.name} takes ${f.nargs} arguments. You provided 0.`);
             }
         }
-        else if (arg instanceof Matrix_1.default) {
+        else if (arg instanceof mattrix_1.default) {
             if (f.nargs === 1) {
                 result = f.apply(arg);
             }
@@ -183,7 +183,7 @@ class Parser {
                 if (x === undefined) {
                     throw new Error(`Not enough arguments for ${t.name}.`);
                 }
-                else if (x instanceof Matrix_1.default) {
+                else if (x instanceof mattrix_1.default) {
                     let result = Operators_1.opData[t.name].apply(x);
                     this.valStack.push(result);
                 }
@@ -221,8 +221,8 @@ class Parser {
                         throw new Error(`Not enough arguments for ${t.name}.`);
                     }
                     else {
-                        let xx = x instanceof Matrix_1.default ? [x] : x;
-                        let yy = y instanceof Matrix_1.default ? [y] : y;
+                        let xx = x instanceof mattrix_1.default ? [x] : x;
+                        let yy = y instanceof mattrix_1.default ? [y] : y;
                         this.valStack.push([...xx, ...yy]);
                     }
                 }

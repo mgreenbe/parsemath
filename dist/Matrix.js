@@ -80,6 +80,18 @@ class Matrix {
             return new Matrix(m, n, Y);
         };
     }
+    static abs(X) {
+        return Matrix.lift(Math.abs)(X);
+    }
+    abs() {
+        return Matrix.abs(this);
+    }
+    static areClose(X, Y, eps = 1e-8) {
+        return Matrix.lift((x, y) => Math.abs(x - y) < eps ? 1 : 0)(X, Y);
+    }
+    isCloseTo(Y) {
+        return Matrix.areClose(this, Y);
+    }
     map(f) {
         return new Matrix(this.m, this.n, this.entries.map(f));
     }
@@ -147,6 +159,7 @@ class Matrix {
     }
     static vJoin(X, Y) {
         if (X.n !== Y.n) {
+            console.log(X, Y);
             throw new Error("Matrices must have the same number of columns.");
         }
         return new Matrix(X.m + Y.m, X.n, [...X.entries, ...Y.entries]);

@@ -1,4 +1,4 @@
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 
 export type Op = "+" | "-" | "*" | "/" | "u-" | "u+" | "^" | "=" | "," | ";";
 

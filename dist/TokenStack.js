@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Matrix_1 = __importDefault(require("./Matrix"));
+const mattrix_1 = __importDefault(require("mattrix"));
 const op = (startPos, op) => {
     return { type: "OP", startPos, name: op };
 };
@@ -105,7 +105,7 @@ class TokenStack {
             }
             let startPos = this.pos;
             this.pos += match[0].length;
-            let m = Matrix_1.default.fromNumber(Number(match[0]));
+            let m = mattrix_1.default.fromNumber(Number(match[0]));
             this.cur = value(startPos, m);
             return this.cur;
         }

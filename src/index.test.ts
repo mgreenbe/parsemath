@@ -1,5 +1,5 @@
 import { Parser, parse, builtInFuns } from "./index";
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 
 function numDigits(eps: number, a: number, b: number) {
   let n = -Math.log10(0.5 * eps * (Math.abs(a) + Math.abs(b)));
@@ -256,4 +256,13 @@ test("substitution in matrices", () => {
     builtInFuns
   );
   expect(P.parse().all()).toBe(true);
+});
+
+test("absolute value of a matrix", () => {
+  let expr = "abs([1e-10, -1, 2+3e-9; -3, 4 - 10.111e-12, -5; 6, -7, 8])";
+  expect(
+    parse(expr)
+      .isCloseTo(Matrix.create(3, 3, [0, 1, 2, 3, 4, 5, 6, 7, 8]))
+      .all()
+  ).toBe(true);
 });

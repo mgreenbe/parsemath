@@ -4,7 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.opData = void 0;
-const Matrix_1 = __importDefault(require("./Matrix"));
+const mattrix_1 = __importDefault(require("mattrix"));
 exports.opData = {
     //   ",": { arity: 2, prec: 0, fixity: "INFIX", assoc: "LTR" },
     "=": {
@@ -12,35 +12,35 @@ exports.opData = {
         prec: 1,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.equals,
+        apply: mattrix_1.default.equals,
     },
     "+": {
         arity: 2,
         prec: 2,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.plus,
+        apply: mattrix_1.default.plus,
     },
     "-": {
         arity: 2,
         prec: 2,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.minus,
+        apply: mattrix_1.default.minus,
     },
     "*": {
         arity: 2,
         prec: 3,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.times,
+        apply: mattrix_1.default.times,
     },
     "/": {
         arity: 2,
         prec: 3,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.divide,
+        apply: mattrix_1.default.divide,
     },
     "u+": {
         arity: 1,
@@ -54,27 +54,27 @@ exports.opData = {
         prec: 4,
         fixity: "PREFIX",
         assoc: "RTL",
-        apply: Matrix_1.default.neg,
+        apply: mattrix_1.default.neg,
     },
     "^": {
         arity: 2,
         prec: 5,
         fixity: "INFIX",
         assoc: "RTL",
-        apply: Matrix_1.default.pow,
+        apply: mattrix_1.default.pow,
     },
     ",": {
         arity: 2,
         prec: 1,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.hJoin,
+        apply: mattrix_1.default.hJoin,
     },
     ";": {
         arity: 2,
         prec: 0,
         fixity: "INFIX",
         assoc: "LTR",
-        apply: Matrix_1.default.vJoin,
+        apply: mattrix_1.default.vJoin,
     },
 };

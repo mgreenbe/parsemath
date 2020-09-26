@@ -5,7 +5,7 @@ import TokenStack, {
   LParenTok,
   LBrakTok,
 } from "./TokenStack";
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 import { builtInFuns, Fun, FunRec } from "./Functions";
 import { opData } from "./Operators";
 // import { builtInFuns, opData, Fun, FunRec } from "./BuiltIns";

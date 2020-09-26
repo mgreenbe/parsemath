@@ -1,5 +1,5 @@
 import { Op } from "./Operators";
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 export declare type Token = ValueTok | IdentTok | OpTok | LParenTok | RParenTok | LBrakTok | RBrakTok;
 export declare type ValueTok = {
     type: "VALUE";

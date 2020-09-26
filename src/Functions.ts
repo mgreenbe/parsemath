@@ -1,4 +1,4 @@
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 
 export type Fun = (...args: Matrix[]) => Matrix;
 export type FunRec = { nargs: number; apply: Fun };

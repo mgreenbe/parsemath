@@ -1,5 +1,5 @@
 import { Op } from "./Operators";
-import Matrix from "./Matrix";
+import Matrix from "mattrix";
 
 export type Token =
   | ValueTok

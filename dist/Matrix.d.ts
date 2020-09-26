@@ -10,6 +10,10 @@ export default class Matrix {
     static fromNumber(x: number): Matrix;
     item(): number;
     static lift(f: (...xs: number[]) => number): (...Xs: Matrix[]) => Matrix;
+    static abs(X: Matrix): Matrix;
+    abs(): Matrix;
+    static areClose(X: Matrix, Y: Matrix, eps?: number): Matrix;
+    isCloseTo(Y: Matrix): Matrix;
     map(f: (x: number) => number): Matrix;
     all(): boolean;
     static dot(X: Matrix, Y: Matrix): Matrix;
